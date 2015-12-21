@@ -38,6 +38,7 @@ The fix will place a keyframe on the next frame if possible to preserve the anim
         for attr, keys in sel.iteritems():
             for time, value in keys:
                 prev = cmds.findKeyframe(attr, t=(time, time), which="previous")
+                print prev
                 nxt_frame = int(time) + 1
                 if not cmds.keyframe(attr, q=True, t=(nxt_frame,nxt_frame)):
                     cmds.setKeyframe(attr, t=nxt_frame)

@@ -62,13 +62,30 @@ class Main(object):
 
     def highlight_issues(s, mod):
         """ Select all keys that cause issues """
-        for attr, keys in s.selection.get(mod, {}).iteritems():
-            cmds.select(attr.split(".")[0], add=True)
-            for time, value in keys:
-                cmds.selectKey(attr, t=(time,time), add=True, k=True)
+        err = None
+        cmds.undoInfo(openChunk=True)
+        try:
+            cmds.select(clear=True)
+            for attr, keys in s.selection.get(mod, {}).iteritems():
+                cmds.select(attr.split(".")[0], add=True)
+                for time, value in keys:
+                    cmds.selectKey(attr, t=(time,time), add=True, k=True)
+        except Exception as err:
+            raise
+        finally:
+            cmds.undoInfo(closeChunk=True)
+            if err: cmds.undo()
 
     def fix_issues(s, mod):
         """ Attempt to fix issues """
-        mod.fix(s.selection.get(mod, {}))
+        err = None
+        cmds.undoInfo(openChunk=True)
+        try:
+            mod.fix(s.selection.get(mod, {}))
+        except Exception as err:
+            raise
+        finally:
+            cmds.undoInfo(closeChunk=True)
+            if err: cmds.undo()
 
 Main()
