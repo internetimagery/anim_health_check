@@ -2,58 +2,34 @@
 
 import functools
 import itertools
-import collections
 import maya.mel as mel
 import maya.cmds as cmds
-
-tree = collections.defaultdict(lambda: tree())
 
 def chunk(iterable, size, default=None):
     """ Iterate in chunks """
     return itertools.izip_longest(*[iter(iterable)]*size, fillvalue=default)
 
-def is_animated(attr):
-    """ Check if attribute is animated """
-    return not not cmds.listConnections(attr, d=False, type="animCurve")
-
-def get_objects():
-    """ Return selected objects """
-    for sel in cmds.ls(sl=True, type="transform") or []:
-        yield sel
-
-def get_attributes(obj):
-    """ Given an object, return its attributes. Returns (obj, attr) """
-    for obj, attr in itertools.izip(itertools.repeat(obj), cmds.listAttr(obj, k=True) or []):
-        yield obj, attr
-
-def get_keyframes(attr):
-    """ Get keyframes from an attribute. Returns (time, value) """
-    for time, value in chunk(cmds.keyframe(attr, q=True, tc=True, vc=True) or [], 2):
-        yield time, value
-
-def get_channelbox(channel_box=functools.partial(cmds.channelBox, "mainChannelBox", q=True)):
+def get_channelbox_attributes(channel_box=functools.partial(cmds.channelBox, "mainChannelBox", q=True)):
     """ Get selections from the channel_box. Returns (obj, attr) """
-    for obj, attr in itertools.product(channel_box(mol=True), channel_box(sma=True)):
+    for obj, attr in itertools.product(channel_box(mol=True) or [], channel_box(sma=True) or []):
         if cmds.attributeQuery(attr, n=obj, ex=True):
-            yield obj, attr
+            yield obj + "." + cmds.attributeQuery(attr, n=obj, ln=True)
 
-def get_graph():
+def get_graph_attributes():
     """ Get channel selection from Graph. Returns (obj, attr) """
-    panel = cmds.getPanel(sty="graphEditor")[0] + "FromOutliner"
-    graph = cmds.selectionConnection(panel, q=True, obj=True) or []
-    for sel in graph:
-        obj_attr = sel.split(".")
-        if len(obj_attr) == 2:
-            yield obj_attr
+    for panel in cmds.getPanel(sty="graphEditor") or []:
+        graph = cmds.selectionConnection(panel + "FromOutliner", q=True, obj=True) or []
+        for attr in graph:
+            if len(attr.split(".")) == 2:
+                yield attr
 
-def get_selected_keys(obj):
-    """ Get a listing of selected keyframes. Returns (obj, attr), (time, value) """
-    for curve in cmds.keyframe(obj, q=True, n=True, sl=True) or []:
-        attr = cmds.listConnections(curve, p=True, type="transform") or []
-        keys = cmds.keyframe(curve, q=True, sl=True, tc=True, vc=True) or []
-        for key in chunk(keys, 2):
-            for at in attr:
-                yield (at.split(".")), key
+def get_selected_keys(objs):
+    """ Get a listing of selected keyframes. """
+    for curve in cmds.keyframe(objs, q=True, n=True, sl=True) or []:
+        keys = cmds.keyframe(curve, q=True, tc=True, vc=True, sl=True) or []
+        attrs = cmds.listConnections(curve, type="transform", s=False, p=True)
+        for attr in attrs:
+            yield attr, chunk(keys, 2)
 
 def get_frame_range():
     """ Get selected frame range. Either the full time slider or something highlighted """
@@ -63,18 +39,29 @@ def get_frame_range():
     else:
         return cmds.playbackOptions(q=True, min=True), cmds.playbackOptions(q=True, max=True)
 
+def get_all_keys(objs):
+    """ Given a list of objects. Get all attributes and keyframes """
+    for curve in cmds.keyframe(objs, q=True, n=True) or []:
+        keys = cmds.keyframe(curve, q=True, tc=True, vc=True) or []
+        attrs = cmds.listConnections(curve, type="transform", s=False, p=True)
+        for attr in attrs:
+            yield attr, chunk(keys, 2)
 
-# def get_selection():
-#     """ Get current selection. Hierarchy of objects, attributes, keyframes """
-#     objs = tree()
-#     sel = cmds.ls(sl=True, type="transform") or []
+def get_selection():
+    """ Get current selection. Attributes to Keyframes """
+    sel = cmds.ls(sl=True, type="transform")
+    if not sel: return {}
+    sel_keys = dict((a, tuple(b)) for a, b in get_selected_keys(sel))
+    if sel_keys: return sel_keys # If we have selected keyframes. This overrides all!
+
+    min_, max_ = get_frame_range() # Get frame range
+    all_keys = dict((a, tuple((c, d) for c, d in b if min_ < c < max_)) for a, b in get_all_keys(sel)) # And all keyframes
+
+    filter_ = tuple(get_graph_attributes()) or tuple(get_channelbox_attributes()) # Get any other selections
+
+    filtered_keys = dict((a, b) for a, b in all_keys.iteritems() if not filter_ or a in filter_ and b) # Filter our selection
+
+    return filtered_keys
 
 if __name__ == '__main__':
-    print get_frame_range()
-    # for obj in get_objects():
-    #     for thing in get_selected_keys(obj):
-    #         print thing
-    #     for attr in get_attributes(obj):
-    #         print attr
-            # for key in get_keyframes(".".join((obj, attr))):
-            #     print obj, attr, key
+    print get_selection()
