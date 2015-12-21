@@ -38,9 +38,14 @@ The fix will place a keyframe on the next frame if possible to preserve the anim
         for attr, keys in sel.iteritems():
             for time, value in keys:
                 prev = cmds.findKeyframe(attr, t=(time, time), which="previous")
-                print prev
-                nxt_frame = int(time) + 1
-                if not cmds.keyframe(attr, q=True, t=(nxt_frame,nxt_frame)):
-                    cmds.setKeyframe(attr, t=nxt_frame)
+                next_ = cmds.findKeyframe(attr, t=(time,time), which="next")
+                if prev == time: # First frame
+                    cmds.setKeyframe(attr, t=int(time), v=value)
+                elif next_ == time: # Last frame
+                    cmds.setKeyframe(attr, t=int(time) + 1, v=value)
+                else:
+                    nxt_frame = int(time) + 1
+                    if not cmds.keyframe(attr, q=True, t=(nxt_frame,nxt_frame)):
+                        cmds.setKeyframe(attr, t=nxt_frame)
                 cmds.cutKey(attr, t=(time,time), cl=True)
 		print 'Doubleups Deteted.'
