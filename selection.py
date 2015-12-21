@@ -1,4 +1,20 @@
 # Contexturally make a selection.
+# Created By Jason Dixon. http://internetimagery.com
+#
+# Wrap the outermost function calls in the Report class
+# As a decorator or as a context manager on the outermost function calls
+# For instance, decorate your Main() function,
+# or any function that is called directly by a GUI
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 
 import functools
 import itertools
@@ -48,7 +64,14 @@ def get_all_keys(objs):
             yield attr, chunk(keys, 2)
 
 def get_selection():
-    """ Get current selection. Attributes to Keyframes """
+    """
+    Get current selection. Attributes to Keyframes
+    Selection Priority:
+        (1) Direct key selection
+        (2) Graph Channel selection
+        (3) Channelbox selection
+        (4) All keyframes
+    """
     sel = cmds.ls(sl=True, type="transform")
     if not sel: return {}
     sel_keys = dict((a, tuple(b)) for a, b in get_selected_keys(sel))
