@@ -3,6 +3,7 @@
 import base
 import itertools
 import collections
+import maya.cmds as cmds
 
 def shift(iterable, size):
     """ iterate in groups ie [1,2,3] [2,3,4] """
