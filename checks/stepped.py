@@ -1,0 +1,43 @@
+# Remove Stepped Keys
+# Created By Jason Dixon. http://internetimagery.com
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+import base
+import collections
+import maya.cmds as cmds
+
+class Stepped_Check(base.Base_Check):
+    """ Check for stepped keys """
+    def __init__(s):
+        s.label = "Key Stepped Keys."
+        s.description = """
+Checks for any stray stepped tangents.
+
+The fix changes those tangents to AUTO.
+Be aware of any stepped tangents you might actually want to keep. Such as turning on and off constraints.
+"""
+
+    def filter(s, sel):
+        """ Pull out relevant keys """
+        found = collections.defaultdict(list)
+        for attr, keys in sel.iteritems():
+            for time, value in keys:
+                if cmds.keyTangent(attr, q=True, t=(time,time), ott=True)[0] == "step":
+                    found[attr].append(k2)
+        return found
+
+    def fix(s, sel):
+        """ Change Stepped keys to Auto tangents """
+        for attr, keys in sel.iteritems():
+            for time, value in keys:
+                cmds.keyTangent(attr, e=True, t=(time,time), ott="auto")
+        print "Stepped Keys Removed"
