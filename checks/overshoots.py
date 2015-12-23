@@ -32,12 +32,6 @@ def chunk(iterable, size, default=None):
     i = iter(iterable)
     return itertools.izip_longest(*[i]*size, fillvalue=default)
 
-
-
-
-
-
-
 class Overshoot_Check(object):
     """ Check for overshoots """
     def __init__(s):
@@ -55,16 +49,21 @@ In which case it will simply make the tangent flat.
         for attr, keys in sel.iteritems():
             if 1 < len(keys): # Can't overshoot without two or more keys
                 for k1, k2 in shift(s.get_keys(attr), 2): # Use different key capturing mechanism
-                    if s.get_overshoots(k1[1], k1[2], k2[0], k2[1]):
-                        found[attr].append(k1[1])
-                        found[attr].append(k2[1])
+                    if k1[2]: # Do we have an out tangent?
+                        if s.get_overshoots(k1[1], k1[2], k2[0], k2[1]):
+                            found[attr].append(k1[1])
+                            found[attr].append(k2[1])
         return found
 
     def fix(s, sel):
         """ Remove overshoots preserving animation """
         for attr, keys in sel.iteritems():
-            for k1, k2 in chunk(keys, 2):
-                pass
+            key_cache = dict((a[1][0], a) for a in s.get_keys(attr))
+            for k1, k2 in shift(keys, 2):
+                k1 = key_cache[k1[0]]
+                k2 = key_cache[k2[0]]
+                for overshoot in s.get_overshoots(k1[1], k1[2], k2[0], k2[1]):
+                    print overshoot
 
     def get_keys(s, attr):
         """ Given an attribute snag all relevant keyframe information """
@@ -73,12 +72,14 @@ In which case it will simply make the tangent flat.
             try:
                 cmds.keyTangent(temp_curve, e=True, wt=True) # Turn on weighted tangents
                 keys = chunk(cmds.keyframe(temp_curve, q=True, tc=True, vc=True) or [], 2)
-                tangents = chunk(cmds.keyTangent(temp_curve, q=True, ia=True, oa=True, iw=True, ow=True, wt=True, ott=True) or [], 5)
+                tangents = chunk(cmds.keyTangent(temp_curve, q=True, ia=True, oa=True, iw=True, ow=True, ott=True) or [], 5)
                 for key, tangent in itertools.izip(keys, tangents):
-                    tangent_type = tangent[0]
+                    p1, p2, p3 = s.get_points(*key + tangent[:-1])
+
+                    tangent_type = tangent[-1]
                     if tangent_type == "step":
-                        pass # TODO: Do I need to worry about stepped tangents?
-                    yield s.get_points(*key + tangent[1:])
+                        p3 = None
+                    yield p1, p2, p3
             finally:
                 cmds.delete(temp_curve)
 
@@ -145,8 +146,10 @@ data = {attr: tuple(keys)}
 
 check = Overshoot_Check()
 
-print check.filter(data)
+data = check.filter(data)
+print data
 
+check.fix(data)
 
 
 # http://stackoverflow.com/questions/2587751/an-algorithm-to-find-bounding-box-of-closed-bezier-curves
