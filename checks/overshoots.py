@@ -13,7 +13,7 @@
 
 from __future__ import division
 
-# import base
+import base
 import math
 import itertools
 import collections
@@ -32,7 +32,7 @@ def chunk(iterable, size, default=None):
     i = iter(iterable)
     return itertools.izip_longest(*[i]*size, fillvalue=default)
 
-class Overshoot_Check(object):
+class Overshoot_Check(base.Base_Check):
     """ Check for overshoots """
     def __init__(s):
         s.label = "Overshoots."
@@ -63,7 +63,7 @@ In which case it will simply make the tangent flat.
                 k1 = key_cache[k1[0]]
                 k2 = key_cache[k2[0]]
                 for overshoot in s.get_overshoots(k1[1], k1[2], k2[0], k2[1]):
-                    print overshoot
+                    cmds.setKeyframe(attr, t=overshoot[0], i=True)
 
     def get_keys(s, attr):
         """ Given an attribute snag all relevant keyframe information """
@@ -75,7 +75,6 @@ In which case it will simply make the tangent flat.
                 tangents = chunk(cmds.keyTangent(temp_curve, q=True, ia=True, oa=True, iw=True, ow=True, ott=True) or [], 5)
                 for key, tangent in itertools.izip(keys, tangents):
                     p1, p2, p3 = s.get_points(*key + tangent[:-1])
-
                     tangent_type = tangent[-1]
                     if tangent_type == "step":
                         p3 = None
@@ -139,50 +138,3 @@ In which case it will simply make the tangent flat.
             y = (mt * mt * mt * y0) + (3 * mt * mt * t * y1) + (3 * mt * t * t * y2) + (t * t * t * y3)
             points.append((x, y))
         return points
-
-attr = "pSphere1.translateX"
-keys = chunk(cmds.keyframe(attr, q=True, tc=True, vc=True) or [], 2)
-data = {attr: tuple(keys)}
-
-check = Overshoot_Check()
-
-data = check.filter(data)
-print data
-
-check.fix(data)
-
-
-# http://stackoverflow.com/questions/2587751/an-algorithm-to-find-bounding-box-of-closed-bezier-curves
-
-# obj = pmc.PyNode("pSphere1")
-# attr = obj.translateX
-# keys = pmc.keyframe(attr, q=True, tc=True, vc=True)
-# tans = pmc.keyTangent(attr, q=True, ia=True, oa=True, iw=True, ow=True, wt=True)
-# weighted = tans.pop(0)
-#
-# combined = (tuple(itertools.chain(a, b)) for a, b in itertools.izip(keys, chunk(tans, 4)))
-#
-# # duplicate -rr;select -r pSphere1_translateX1 ;
-# working = pmc.duplicate(attr.connections(type="animCurve"), rr=True)[0]
-#
-# for k1, k2 in shift(combined, 2):
-#
-#     if "step" != pmc.keyTangent(attr, t=(k2[0],k2[0]), q=True, ott=True):
-#
-#         p1 = k1[:2]
-#         p4 = k2[:2]
-#
-#         left_angle = math.radians(k1[3])
-#         left_weight = k1[5]
-#         right_angle = math.radians(k2[2])
-#         right_weight = -k2[4]
-#
-#         p2 = [math.cos(left_angle) * left_weight + p1[0], math.sin(left_angle) * left_weight + p1[1]]
-#         p3 = [math.cos(right_angle) * right_weight + p4[0], math.sin(right_angle) * right_weight + p4[1]]
-#
-#         peaks = getBoundsOfCurve(p1[0], p1[1], p2[0], p2[1], p3[0], p3[1], p4[0], p4[1])
-#
-#         for peak in peaks:
-#             if p1[1] < peak[1] < p2[1]:
-#                 continue
-#             pmc.setKeyframe(attr, t=peak[0], i=True)
