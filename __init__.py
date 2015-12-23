@@ -85,6 +85,7 @@ class Main(object):
     def filter_keys(s):
         """ Run through all modules and filter keys """
         sel = selection.get_selection()
+        print sel
         for mod in s.modules:
             s.selection[mod] = filtered = mod.filter(sel)
             guis = s.modules[mod]
@@ -120,5 +121,6 @@ class Main(object):
         finally:
             cmds.undoInfo(closeChunk=True)
             if err: cmds.undo()
+        s.reset_gui()
 
 Main()

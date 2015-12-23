@@ -52,7 +52,6 @@ In which case it will simply make the tangent flat.
                     if k1[2]: # Do we have an out tangent?
                         overshoots = s.get_overshoots(k1[1], k1[2], k2[0], k2[1])
                         if overshoots:
-                            print "overshoot", attr, overshoots
                             found[attr].append(k1[1])
                             found[attr].append(k2[1])
         return found
@@ -138,5 +137,9 @@ In which case it will simply make the tangent flat.
             mt = 1 - t
             x = (mt * mt * mt * x0) + (3 * mt * mt * t * x1) + (3 * mt * t * t * x2) + (t * t * t * x3)
             y = (mt * mt * mt * y0) + (3 * mt * mt * t * y1) + (3 * mt * t * t * y2) + (t * t * t * y3)
+            if x0 - 0.001 <= x <= x3 + 0.001:
+                continue
+            if y0 - 0.001 <= y <= y3 + 0.001:
+                continue
             points.append((x, y))
         return points

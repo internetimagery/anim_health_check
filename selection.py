@@ -78,7 +78,7 @@ def get_selection():
     if sel_keys: return sel_keys # If we have selected keyframes. This overrides all!
 
     min_, max_ = get_frame_range() # Get frame range
-    all_keys = dict((a, tuple((c, d) for c, d in b if min_ < c < max_)) for a, b in get_all_keys(sel)) # And all keyframes
+    all_keys = dict((a, tuple((c, d) for c, d in b if min_ <= c <= max_)) for a, b in get_all_keys(sel)) # And all keyframes
 
     filter_ = tuple(get_graph_attributes()) or tuple(get_channelbox_attributes()) # Get any other selections
 
