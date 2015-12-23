@@ -39,8 +39,7 @@ class Overshoot_Check(object):
         s.description = """
 This checks for curves that go beyond any surrounding keys.
 
-The fix places a key at the peak of the tangent, unless the tangent is very close to flat.
-In which case it will simply make the tangent flat.
+The fix places a key at the peak of the tangent or flattens the tangent.
 """
 
     def filter(s, sel):
@@ -60,13 +59,22 @@ In which case it will simply make the tangent flat.
 
     def fix(s, sel):
         """ Remove overshoots preserving animation """
-        for attr, keys in sel.iteritems():
-            key_cache = dict((a[1][0], a) for a in s.get_keys(attr))
-            for k1, k2 in shift(keys, 2):
-                k1 = key_cache[k1[0]]
-                k2 = key_cache[k2[0]]
-                for overshoot in s.get_overshoots(k1[1], k1[2], k2[0], k2[1]):
-                    cmds.setKeyframe(attr, t=overshoot[0], i=True)
+        answer = cmds.confirmDialog(
+            t="How to proceed?",
+            m="Would you like to key the overshoots or flatten them?",
+            b=["Keyframe", "Flatten"])
+        if answer == "Flatten":
+            for attr, keys in sel.iteritems():
+                for time, value in keys:
+                    cmds.keyTangent(attr, t=(time,time), itt="flat", ott="flat")
+        else:
+            for attr, keys in sel.iteritems():
+                key_cache = dict((a[1][0], a) for a in s.get_keys(attr))
+                for k1, k2 in shift(keys, 2):
+                    k1 = key_cache[k1[0]]
+                    k2 = key_cache[k2[0]]
+                    for overshoot in s.get_overshoots(k1[1], k1[2], k2[0], k2[1]):
+                        cmds.setKeyframe(attr, t=overshoot[0], i=True)
 
     def get_keys(s, attr):
         """ Given an attribute snag all relevant keyframe information """
@@ -151,3 +159,4 @@ In which case it will simply make the tangent flat.
 #     data = {attr: tuple(keys)}
 #     check = Overshoot_Check()
 #     filtered = check.filter(data)
+#     check.fix(filtered)

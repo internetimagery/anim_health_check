@@ -122,5 +122,6 @@ class Main(object):
             cmds.undoInfo(closeChunk=True)
             if err: cmds.undo()
         s.reset_gui()
+        s.filter_keys()
 
 Main()
