@@ -74,8 +74,8 @@ def get_selection():
     """
     sel = cmds.ls(sl=True, type="transform")
     if not sel: return {}
-    sel_keys = dict((a, tuple(b)) for a, b in get_selected_keys(sel))
-    if sel_keys: return sel_keys # If we have selected keyframes. This overrides all!
+    # sel_keys = dict((a, tuple(b)) for a, b in get_selected_keys(sel))
+    # if sel_keys: return sel_keys # If we have selected keyframes. This overrides all!
 
     min_, max_ = get_frame_range() # Get frame range
     all_keys = dict((a, tuple((c, d) for c, d in b if min_ <= c <= max_)) for a, b in get_all_keys(sel)) # And all keyframes

@@ -43,10 +43,8 @@ The fix runs a euler filter on the channels.
         if len(rotations) == 3: # Need all three axis to check rotations
             for attr, keys in rotations.iteritems():
                 if 1 < len(keys): # Can't fix rotations with few keyframes
-                    for time, value in keys:
-                        next_frame = time + 1
-                        value2 = cmds.keyframe(attr, t=(next_frame,next_frame), q=True, ev=True)[0]
-                        diff = value2 - value
+                    for k1, k2 in shift(keys, 2):
+                        diff = k2[1] - k1[1]
                         if -90 > diff or diff > 90: # Jumped too far!
                             found[attr].append((time, value))
         return found
