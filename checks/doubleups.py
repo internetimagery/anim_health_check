@@ -57,6 +57,6 @@ The fix will place a keyframe on the next frame if possible to preserve the anim
                 else:
                     nxt_frame = int(time) + 1
                     if not cmds.keyframe(attr, q=True, t=(nxt_frame,nxt_frame)):
-                        cmds.setKeyframe(attr, t=nxt_frame)
+                        cmds.setKeyframe(attr, t=nxt_frame, i=True)
                 cmds.cutKey(attr, t=(time,time), cl=True)
 		print 'Doubleups Deteted.'

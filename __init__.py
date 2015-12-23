@@ -27,6 +27,8 @@ class Main(object):
         s.modules = {} # Different Checks to perform
         s.imgs = imgs = ['checkboxOff.png','checkboxOn.png','closeObject.png'] #images 0=not checked, 1=success, 2=failed
         s.selection = {}
+        s.ready = True # Ready state
+        s._sel_monitor = None
 
         name = "animsanity"
         if cmds.window(name, q=True, ex=True):
@@ -54,12 +56,31 @@ class Main(object):
             s.modules[mod] = gui
 
         cmds.setParent("..")
-        cmds.button(l='Check Animation', h=50, c=Callback(s.filter_keys))
+        s.go_btn = cmds.button(l='Check Animation', h=50, c=Callback(s.filter_keys))
         cmds.showWindow(win)
+        cmds.scriptJob(e=("SelectionChanged", s.monitor_selection), p=win)
 
     def help(s, module):
         """ Display Module Description """
         cmds.confirmDialog(t="What does this do?", m=module.description)
+
+    def monitor_selection(s):
+        """ Monitor Selection changes """
+        sel = cmds.ls(sl=True, type="transform")
+        if sel != s._sel_monitor:
+            s._sel_monitor = sel
+            print "selection changed"
+            if not s.ready:
+                s.reset_gui()
+
+    def reset_gui(s):
+        """ Set us back to a blank slate """
+        for mod, gui in s.modules.iteritems():
+            cmds.image(gui["img"], e=True, i=s.imgs[0])
+            for btn in gui["btn"]:
+                cmds.button(btn, e=True, en=False)
+        cmds.button(s.go_btn, e=True, en=True)
+        s.ready = True
 
     def filter_keys(s):
         """ Run through all modules and filter keys """
@@ -70,6 +91,8 @@ class Main(object):
             for gui in guis["btn"]:
                 cmds.button(gui, e=True, en=True if filtered else False)
             cmds.image(guis["img"], e=True, i=s.imgs[2 if filtered else 1])
+        cmds.button(s.go_btn, e=True, en=False)
+        s.ready = False
 
     def highlight_issues(s, mod):
         """ Select all keys that cause issues """
@@ -89,8 +112,7 @@ class Main(object):
 
     def fix_issues(s, mod):
         """ Attempt to fix issues """
-        err = None
-        cmds.undoInfo(openChunk=True)
+        err = cmds.undoInfo(openChunk=True)
         try:
             mod.fix(s.selection.get(mod, {}))
         except Exception as err:

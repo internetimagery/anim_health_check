@@ -50,7 +50,9 @@ In which case it will simply make the tangent flat.
             if 1 < len(keys): # Can't overshoot without two or more keys
                 for k1, k2 in shift(s.get_keys(attr), 2): # Use different key capturing mechanism
                     if k1[2]: # Do we have an out tangent?
-                        if s.get_overshoots(k1[1], k1[2], k2[0], k2[1]):
+                        overshoots = s.get_overshoots(k1[1], k1[2], k2[0], k2[1])
+                        if overshoots:
+                            print "overshoot", attr, overshoots
                             found[attr].append(k1[1])
                             found[attr].append(k2[1])
         return found
