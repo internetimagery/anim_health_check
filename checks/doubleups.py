@@ -40,7 +40,7 @@ The fix will place a keyframe on the next frame if possible to preserve the anim
         for attr, keys in sel.iteritems():
             if 1 < len(keys): # Can't double up without two or more keys
                 for k1, k2 in shift(keys, 2):
-                    if k1[0] < (k2[0] + 0.05): # 0.05 threshold
+                    if k2[0] < (k1[0] + 0.05): # 0.05 threshold
                         found[attr].append(k2)
         return found
 

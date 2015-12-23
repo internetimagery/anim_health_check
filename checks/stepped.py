@@ -32,7 +32,7 @@ Be aware of any stepped tangents you might actually want to keep. Such as turnin
         for attr, keys in sel.iteritems():
             for time, value in keys:
                 if cmds.keyTangent(attr, q=True, t=(time,time), ott=True)[0] == "step":
-                    found[attr].append(k2)
+                    found[attr].append((time, value))
         return found
 
     def fix(s, sel):

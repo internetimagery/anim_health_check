@@ -32,7 +32,7 @@ The fix will put keys on whole frames.
         for attr, keys in sel.iteritems():
             for time, value in keys:
                 if time % 1:
-                    found[attr].append(k2)
+                    found[attr].append((time, value))
         return found
 
     def is_peak(s, attr, time, value):
