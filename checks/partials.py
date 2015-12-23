@@ -1,4 +1,4 @@
-# Fix Key doubleups
+# Fix Keys between frames
 # Created By Jason Dixon. http://internetimagery.com
 #
 # This program is free software: you can redistribute it and/or modify
@@ -15,14 +15,6 @@ import base
 import functools
 import collections
 import maya.cmds as cmds
-
-def shift(iterable, size):
-    """ iterate in groups ie [1,2,3] [2,3,4] """
-    i = itertools.tee(iterable, size)
-    for a, b in enumerate(i):
-        for c in range(a):
-            b.next()
-    return itertools.izip(*i)
 
 class Partial_Key_Check(base.Base_Check):
     """ Check for keys falling between frames """
