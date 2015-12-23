@@ -13,7 +13,7 @@
 
 from __future__ import division
 
-import base
+# import base
 import math
 import itertools
 import collections
@@ -32,7 +32,7 @@ def chunk(iterable, size, default=None):
     i = iter(iterable)
     return itertools.izip_longest(*[i]*size, fillvalue=default)
 
-class Overshoot_Check(base.Base_Check):
+class Overshoot_Check(object):
     """ Check for overshoots """
     def __init__(s):
         s.label = "Overshoots."
@@ -49,8 +49,11 @@ In which case it will simply make the tangent flat.
         for attr, keys in sel.iteritems():
             if 1 < len(keys): # Can't overshoot without two or more keys
                 for k1, k2 in shift(s.get_keys(attr), 2): # Use different key capturing mechanism
-                    if k1[2]: # Do we have an out tangent?
+                    test_time = k2[1][0]
+                    prev = cmds.findKeyframe(attr, t=(test_time, test_time), which="previous")
+                    if prev == k1[1][0] and k1[2]: # Do we have an out tangent?
                         overshoots = s.get_overshoots(k1[1], k1[2], k2[0], k2[1])
+                        print overshoots
                         if overshoots:
                             found[attr].append(k1[1])
                             found[attr].append(k2[1])
@@ -137,9 +140,15 @@ In which case it will simply make the tangent flat.
             mt = 1 - t
             x = (mt * mt * mt * x0) + (3 * mt * mt * t * x1) + (3 * mt * t * t * x2) + (t * t * t * x3)
             y = (mt * mt * mt * y0) + (3 * mt * mt * t * y1) + (3 * mt * t * t * y2) + (t * t * t * y3)
-            if x0 - 0.001 <= x <= x3 + 0.001:
-                continue
-            if y0 - 0.001 <= y <= y3 + 0.001:
-                continue
-            points.append((x, y))
+            if x0 + 0.1 < x < x3 - 0.1: # We don't want overshoots too close to edges
+                if y0 + 0.001 <= y <= y3 - 0.001:
+                    continue
+                points.append((x, y))
         return points
+
+if __name__ == '__main__':
+    attr = "pCube1.rotateX"
+    keys = chunk(cmds.keyframe(attr, q=True, tc=True, vc=True), 2)
+    data = {attr: tuple(keys)}
+    check = Overshoot_Check()
+    filtered = check.filter(data)

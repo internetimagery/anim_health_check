@@ -28,7 +28,7 @@ class Main(object):
         s.imgs = imgs = ['checkboxOff.png','checkboxOn.png','closeObject.png'] #images 0=not checked, 1=success, 2=failed
         s.selection = {}
         s.ready = True # Ready state
-        s._sel_monitor = None
+        s._sel_monitor = cmds.ls(sl=True, type="transform")
 
         name = "animsanity"
         if cmds.window(name, q=True, ex=True):
@@ -69,7 +69,7 @@ class Main(object):
         sel = cmds.ls(sl=True, type="transform")
         if sel != s._sel_monitor:
             s._sel_monitor = sel
-            print "selection changed"
+            print "selection changed", sel
             if not s.ready:
                 s.reset_gui()
 

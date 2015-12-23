@@ -40,16 +40,13 @@ The fix runs a euler filter on the channels.
         found = collections.defaultdict(list)
         axis = re.compile(r"(rotate[XYZ]|r[xyz])$")
         rotations = dict((a, b) for a, b in sel.iteritems() if axis.search(a)) # Filter rotations
-        print len(rotations), rotations
         if len(rotations) == 3: # Need all three axis to check rotations
             for attr, keys in rotations.iteritems():
-                print "len keys", len(keys)
                 if 1 < len(keys): # Can't fix rotations with few keyframes
-                    print "checking kes", attr, keys
                     for time, value in keys:
-                        value2 = cmds.keyframe(attr, t=(time,time), q=True, ev=True)
+                        next_frame = time + 1
+                        value2 = cmds.keyframe(attr, t=(next_frame,next_frame), q=True, ev=True)[0]
                         diff = value2 - value
-                        print "key", time, value, value2, diff
                         if -90 > diff or diff > 90: # Jumped too far!
                             found[attr].append((time, value))
         return found
