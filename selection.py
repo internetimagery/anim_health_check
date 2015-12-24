@@ -29,7 +29,8 @@ def get_channelbox_attributes(channel_box=functools.partial(cmds.channelBox, "ma
     """ Get selections from the channel_box. Returns (obj, attr) """
     for obj, attr in itertools.product(channel_box(mol=True) or [], channel_box(sma=True) or []):
         if cmds.attributeQuery(attr, n=obj, ex=True):
-            yield obj + "." + cmds.attributeQuery(attr, n=obj, ln=True)
+            for curve in cmds.keyframe(obj, at=attr, q=True, n=True) or []:
+                yield curve
 
 def get_graph_attributes():
     """ Get channel selection from Graph. Returns (obj, attr) """
@@ -37,15 +38,14 @@ def get_graph_attributes():
         graph = cmds.selectionConnection(panel + "FromOutliner", q=True, obj=True) or []
         for attr in graph:
             if len(attr.split(".")) == 2:
-                yield attr
+                for curve in cmds.keyframe(attr, q=True, n=True) or []:
+                    yield curve
 
 def get_selected_keys(objs):
     """ Get a listing of selected keyframes. """
     for curve in cmds.keyframe(objs, q=True, n=True, sl=True) or []:
-        keys = cmds.keyframe(curve, q=True, tc=True, vc=True, sl=True) or []
-        attrs = cmds.listConnections(curve, type="transform", s=False, p=True)
-        for attr in attrs:
-            yield attr, chunk(keys, 2)
+        keys = chunk(cmds.keyframe(curve, q=True, tc=True, vc=True, sl=True) or [], 2)
+        yield curve, keys
 
 def get_frame_range():
     """ Get selected frame range. Either the full time slider or something highlighted """
@@ -58,10 +58,8 @@ def get_frame_range():
 def get_all_keys(objs):
     """ Given a list of objects. Get all attributes and keyframes """
     for curve in cmds.keyframe(objs, q=True, n=True) or []:
-        keys = cmds.keyframe(curve, q=True, tc=True, vc=True) or []
-        attrs = cmds.listConnections(curve, type="transform", s=False, p=True)
-        for attr in attrs:
-            yield attr, chunk(keys, 2)
+        keys = chunk(cmds.keyframe(curve, q=True, tc=True, vc=True) or [], 2)
+        yield curve, keys
 
 def get_selection():
     """

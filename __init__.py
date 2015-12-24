@@ -69,7 +69,6 @@ class Main(object):
         sel = cmds.ls(sl=True, type="transform")
         if sel != s._sel_monitor:
             s._sel_monitor = sel
-            print "selection changed", sel
             if not s.ready:
                 s.reset_gui()
 
@@ -85,7 +84,6 @@ class Main(object):
     def filter_keys(s):
         """ Run through all modules and filter keys """
         sel = selection.get_selection()
-        print sel
         for mod in s.modules:
             s.selection[mod] = filtered = mod.filter(sel)
             guis = s.modules[mod]

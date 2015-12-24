@@ -74,7 +74,7 @@ The fix places a key at the peak of the tangent or flattens the tangent.
                     k1 = key_cache[k1[0]]
                     k2 = key_cache[k2[0]]
                     for overshoot in s.get_overshoots(k1[1], k1[2], k2[0], k2[1]):
-                        cmds.setKeyframe(attr, t=overshoot[0], i=True)
+                        cmds.setKeyframe(attr, t=overshoot[0], itt="flat", ott="flat")
 
     def get_keys(s, attr):
         """ Given an attribute snag all relevant keyframe information """
