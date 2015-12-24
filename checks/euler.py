@@ -41,31 +41,24 @@ The fix runs a euler filter on the channels.
     def filter(s, sel):
         """ Pull out relevant keys """
         found = collections.defaultdict(list)
-        axis = re.compile(r"(rotate[XYZ]|r[xyz])$") # Filter rotation axis
-        rotations = dict((a, b) for a, b in sel.iteritems() if axis.search(a)) # Filter rotations
-        if 1 < len(rotations): # Need more than one axis to check rotations
-            for curve, keys in rotations.iteritems():
-                if 1 < len(keys): # Can't fix rotations with few keyframes
-                    all_vals = [a[1] for a in keys]
-                    val_range = max(all_vals) - min(all_vals)
-                    if 180 < abs(val_range):
-                        for k1, k2 in shift(keys, 2):
-                            left = int((k2[1] - k1[1]) * 0.5 + k1[1])
-                            right = left + 1
+        axis = re.compile(r"(.+)(rotate[XYZ]|r[xyz])$") # Filter rotation axis
+        rotation_curves = collections.defaultdict(dict)
+        for curve, keys in sel.iteritems(): # Divide up channels
+            name = axis.search(curve)
+            if name:
+                rotation_curves[name.group(1)][curve] = keys
+        for obj, curves in rotation_curves.iteritems():
+            if 2 < len(curves): # We need all three channels
+                for curve, keys in curves.iteritems():
+                    for k1, k2 in shift(keys, 2):
+                        middle = (k2[0] - k1[0]) * 0.5 + k1[0]
+                        bounds = int(middle), int(middle)+1
 
-                            if left == k1[0]:
-                                left_val = k1[1]
-                            else:
-                                left_val = cmds.keyframe(curve, t=(left,left), q=True, ev=True)
+                        gradient = [cmds.keyframe(curve, q=True, t=(a,a), ev=True)[0] for a in bounds]
 
-                            if right == k2[0]:
-                                right_val = k2[1]
-                            else:
-                                right_val = cmds.keyframe(curve, t=(right,right), q=True, ev=True)
-
-                            gradient = right_val - left_val
-                            if 90 < abs(gradient): # are we on a steep slope?
-                                found[curve].append(k1)
+                        if 90 < abs(gradient[1] - gradient[0]):
+                            for c, k in curves.iteritems():
+                                found[c] = k
         return found
 
     def fix(s, sel):
