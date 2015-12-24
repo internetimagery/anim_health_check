@@ -11,7 +11,7 @@ Simply copy the folder into your scripts directory in Maya. The folder should be
 Within Maya, create a shelf icon with the following PYTHON code:
 
 	import animsanity
-	animsanity.GUI()
+	animsanity.Main()
 
 * Select your object / control to check the animations.
 
