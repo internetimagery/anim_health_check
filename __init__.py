@@ -36,7 +36,6 @@ class Main(object):
     def __init__(s):
         s.modules = {} # Different Checks to perform
         s.selection = {}
-        s.ready = True # Ready state
         s._sel_monitor = cmds.ls(sl=True, type="transform")
         s._curve_monitor = []
 
@@ -79,29 +78,29 @@ class Main(object):
         sel = cmds.ls(sl=True, type="transform")
         if sel != s._sel_monitor:
             s._sel_monitor = sel
-            if not s.ready:
-                s.reset_gui()
+            s.reset_gui()
 
     def monitor_curve_changes(s, curve):
         """ Monitor changes to a curve """
         # Curve changed. This makes our data invalid.
-        print "Excuse me... %s changed. You must scan for issues again." % curve
+        cmds.warning("Excuse me... %s changed. You must scan for issues again." % curve)
         cmds.scriptJob(ie=s.reset_gui, ro=True, p=s.win) # Cannot kill scriptjob while running
 
     def reset_gui(s):
         """ Set us back to a blank slate """
         for job in s._curve_monitor:
-            cmds.scriptJob(kill=job)
+            if cmds.scriptJob(exists=job):
+                cmds.scriptJob(kill=job)
         for mod, gui in s.modules.iteritems():
             cmds.image(gui["img"], e=True, i=s.imgs[0])
             for btn in gui["btn"]:
                 cmds.button(btn, e=True, en=False)
         cmds.button(s.go_btn, e=True, en=True)
-        s.ready = True
 
     def filter_keys(s):
         """ Run through all modules and filter keys """
         sel = selection.get_selection()
+        if not sel: return cmds.confirmDialog(t="Whoops...", m="Nothing selected.")
         for curve in sel: # Track changes to the curve
             s._curve_monitor.append(cmds.scriptJob(ac=("%s.a" % curve, Callback(s.monitor_curve_changes, curve)), p=s.win))
         for mod in s.modules:
@@ -112,12 +111,10 @@ class Main(object):
                     cmds.button(gui, e=True, en=True if filtered else False)
                 cmds.image(guis["img"], e=True, i=s.imgs[2 if filtered else 1])
         cmds.button(s.go_btn, e=True, en=False)
-        s.ready = False
 
     def highlight_issues(s, mod):
         """ Select all keys that cause issues """
-        err = None
-        cmds.undoInfo(openChunk=True)
+        err = cmds.undoInfo(openChunk=True)
         try:
             cmds.selectKey(clear=True)
             for curve, keys in s.selection.get(mod, {}).iteritems():
