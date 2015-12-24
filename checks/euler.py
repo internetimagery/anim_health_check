@@ -28,6 +28,7 @@ def shift(iterable, size):
             b.next()
     return itertools.izip(*i)
 
+# http://www.creativecrash.com/forums/mel/topics/euler-filter-algorithm#discussion_post_103750
 class Euler_Check(object):
     """ Check for rotation pops """
     def __init__(s):
@@ -41,24 +42,28 @@ The fix runs a euler filter on the channels.
     def filter(s, sel):
         """ Pull out relevant keys """
         found = collections.defaultdict(list)
-        axis = re.compile(r"(.+)(rotate[XYZ]|r[xyz])$") # Filter rotation axis
+        axis = re.compile(r"(.+)rotate[XYZ]$") # Filter rotation axis
         rotation_curves = collections.defaultdict(dict)
         for curve, keys in sel.iteritems(): # Divide up channels
-            name = axis.search(curve)
+            name = axis.match(curve)
             if name:
                 rotation_curves[name.group(1)][curve] = keys
         for obj, curves in rotation_curves.iteritems():
-            if 2 < len(curves): # We need all three channels
-                for curve, keys in curves.iteritems():
-                    for k1, k2 in shift(keys, 2):
-                        middle = (k2[0] - k1[0]) * 0.5 + k1[0]
-                        bounds = int(middle), int(middle)+1
+            try:
+                if 2 < len(curves): # We need all three channels
+                    for curve, keys in curves.iteritems():
+                        for k1, k2 in shift(keys, 2):
+                            middle = (k2[0] - k1[0]) * 0.5 + k1[0]
+                            bounds = int(middle), int(middle)+1 # assume middle of curve is steepest part
 
-                        gradient = [cmds.keyframe(curve, q=True, t=(a,a), ev=True)[0] for a in bounds]
+                            gradient = sorted(cmds.keyframe(curve, q=True, t=(a,a), ev=True)[0] for a in bounds)
 
-                        if 90 < abs(gradient[1] - gradient[0]):
-                            for c, k in curves.iteritems():
-                                found[c] = k
+                            if 90 < abs(gradient[1] - gradient[0]): # Looking for curve spikes in the rotations.
+                                for c, k in curves.iteritems():
+                                    found[c] = k
+                                raise StopIteration
+            except StopIteration:
+                pass
         return found
 
     def fix(s, sel):

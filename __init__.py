@@ -11,9 +11,18 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 
+import time
 import animsanity.checks as checks
 import animsanity.selection as selection
 import maya.cmds as cmds
+
+class Timer(object):
+    """ Time the running of actions """
+    verbose = True # Optional turn off timing
+    def __init__(s, name): s.name = name
+    def __enter__(s): s.start = time.time()
+    def __exit__(s, *err):
+        if s.verbose: print "%s...\t\tElapsed time: %sms." % (s.name, (time.time() - s.start) * 1000)
 
 class Callback(object):
     """ Save variables in loops """
@@ -23,9 +32,9 @@ class Callback(object):
 
 class Main(object):
     """ Main GUI """
+    imgs = ['checkboxOff.png','checkboxOn.png','closeObject.png'] #images 0=not checked, 1=success, 2=failed
     def __init__(s):
         s.modules = {} # Different Checks to perform
-        s.imgs = imgs = ['checkboxOff.png','checkboxOn.png','closeObject.png'] #images 0=not checked, 1=success, 2=failed
         s.selection = {}
         s.ready = True # Ready state
         s._sel_monitor = cmds.ls(sl=True, type="transform")
@@ -46,7 +55,7 @@ class Main(object):
         for mod in checks.modules:
             gui = {}
             cmds.rowLayout(nc=5, adj=2)
-            gui["img"] = cmds.image(i=imgs[0])
+            gui["img"] = cmds.image(i=s.imgs[0])
             cmds.text(l=mod.label, al="left")
             gui["btn"] = [
                 cmds.button(l="show", en=False, w=60, c=Callback(s.highlight_issues, mod)),
@@ -85,11 +94,12 @@ class Main(object):
         """ Run through all modules and filter keys """
         sel = selection.get_selection()
         for mod in s.modules:
-            s.selection[mod] = filtered = mod.filter(sel)
-            guis = s.modules[mod]
-            for gui in guis["btn"]:
-                cmds.button(gui, e=True, en=True if filtered else False)
-            cmds.image(guis["img"], e=True, i=s.imgs[2 if filtered else 1])
+            with Timer("Checking %s" % mod.label):
+                s.selection[mod] = filtered = mod.filter(sel)
+                guis = s.modules[mod]
+                for gui in guis["btn"]:
+                    cmds.button(gui, e=True, en=True if filtered else False)
+                cmds.image(guis["img"], e=True, i=s.imgs[2 if filtered else 1])
         cmds.button(s.go_btn, e=True, en=False)
         s.ready = False
 

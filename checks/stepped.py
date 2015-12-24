@@ -17,7 +17,7 @@ import maya.cmds as cmds
 class Stepped_Check(object):
     """ Check for stepped keys """
     def __init__(s):
-        s.label = "Key Stepped Keys."
+        s.label = "Stepped Keys."
         s.description = """
 Checks for any stray stepped tangents.
 

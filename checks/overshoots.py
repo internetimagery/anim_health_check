@@ -46,7 +46,8 @@ The fix places a key at the peak of the tangent or flattens the tangent.
         found = collections.defaultdict(list)
         for curve, keys in sel.iteritems():
             if 1 < len(keys): # Can't overshoot without two or more keys
-                for k1, k2 in shift(s.get_keys(curve), 2): # Use different key capturing mechanism
+                all_times = set(a[0] for a in keys)
+                for k1, k2 in shift((a for a in s.get_keys(curve) if a[1][0] in all_times), 2): # Use different key capturing mechanism
                     test_time = k2[1][0]
                     prev = cmds.findKeyframe(curve, t=(test_time, test_time), which="previous")
                     if prev == k1[1][0] and k1[2]: # Do we have an out tangent?
