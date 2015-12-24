@@ -46,10 +46,26 @@ The fix runs a euler filter on the channels.
         if 1 < len(rotations): # Need more than one axis to check rotations
             for curve, keys in rotations.iteritems():
                 if 1 < len(keys): # Can't fix rotations with few keyframes
-                    for k1, k2 in shift(keys, 2):
-                        diff = k2[1] - k1[1]
-                        if -90 > diff or diff > 90: # Jumped too far!
-                            found[curve].append((time, value))
+                    all_vals = [a[1] for a in keys]
+                    val_range = max(all_vals) - min(all_vals)
+                    if 180 < abs(val_range):
+                        for k1, k2 in shift(keys, 2):
+                            left = int((k2[1] - k1[1]) * 0.5 + k1[1])
+                            right = left + 1
+
+                            if left == k1[0]:
+                                left_val = k1[1]
+                            else:
+                                left_val = cmds.keyframe(curve, t=(left,left), q=True, ev=True)
+
+                            if right == k2[0]:
+                                right_val = k2[1]
+                            else:
+                                right_val = cmds.keyframe(curve, t=(right,right), q=True, ev=True)
+
+                            gradient = right_val - left_val
+                            if 90 < abs(gradient): # are we on a steep slope?
+                                found[curve].append(k1)
         return found
 
     def fix(s, sel):
