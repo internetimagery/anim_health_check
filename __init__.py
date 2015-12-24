@@ -38,12 +38,13 @@ class Main(object):
         s.selection = {}
         s.ready = True # Ready state
         s._sel_monitor = cmds.ls(sl=True, type="transform")
+        s._curve_monitor = []
 
         name = "animsanity"
         if cmds.window(name, q=True, ex=True):
             cmds.deleteUI(name)
 
-        win = cmds.window(name, rtf=True, t="Animation Sanity!")
+        s.win = win = cmds.window(name, rtf=True, t="Animation Sanity!")
         cmds.columnLayout(adj=True)
         cmds.text(l="Select objects, attributes and / or keyframes you wish to check")
         cmds.separator()
@@ -67,13 +68,13 @@ class Main(object):
         cmds.setParent("..")
         s.go_btn = cmds.button(l='Check Animation', h=50, c=Callback(s.filter_keys))
         cmds.showWindow(win)
-        cmds.scriptJob(e=("SelectionChanged", s.monitor_selection), p=win)
+        cmds.scriptJob(e=("SelectionChanged", s.monitor_selection_changes), p=win)
 
     def help(s, module):
         """ Display Module Description """
         cmds.confirmDialog(t="What does this do?", m=module.description)
 
-    def monitor_selection(s):
+    def monitor_selection_changes(s):
         """ Monitor Selection changes """
         sel = cmds.ls(sl=True, type="transform")
         if sel != s._sel_monitor:
@@ -81,8 +82,16 @@ class Main(object):
             if not s.ready:
                 s.reset_gui()
 
+    def monitor_curve_changes(s, curve):
+        """ Monitor changes to a curve """
+        # Curve changed. This makes our data invalid.
+        print "Excuse me... %s changed. You must scan for issues again." % curve
+        cmds.scriptJob(ie=s.reset_gui, ro=True, p=s.win) # Cannot kill scriptjob while running
+
     def reset_gui(s):
         """ Set us back to a blank slate """
+        for job in s._curve_monitor:
+            cmds.scriptJob(kill=job)
         for mod, gui in s.modules.iteritems():
             cmds.image(gui["img"], e=True, i=s.imgs[0])
             for btn in gui["btn"]:
@@ -93,6 +102,8 @@ class Main(object):
     def filter_keys(s):
         """ Run through all modules and filter keys """
         sel = selection.get_selection()
+        for curve in sel: # Track changes to the curve
+            s._curve_monitor.append(cmds.scriptJob(ac=("%s.a" % curve, Callback(s.monitor_curve_changes, curve)), p=s.win))
         for mod in s.modules:
             with Timer("Checking %s" % mod.label):
                 s.selection[mod] = filtered = mod.filter(sel)
@@ -120,6 +131,7 @@ class Main(object):
 
     def fix_issues(s, mod):
         """ Attempt to fix issues """
+        s.reset_gui()
         err = cmds.undoInfo(openChunk=True)
         try:
             mod.fix(s.selection.get(mod, {}))
@@ -128,7 +140,6 @@ class Main(object):
         finally:
             cmds.undoInfo(closeChunk=True)
             if err: cmds.undo()
-        s.reset_gui()
         s.filter_keys()
 
 Main()

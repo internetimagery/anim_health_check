@@ -58,7 +58,7 @@ The fix runs a euler filter on the channels.
 
                             gradient = sorted(cmds.keyframe(curve, q=True, t=(a,a), ev=True)[0] for a in bounds)
 
-                            if 90 < abs(gradient[1] - gradient[0]): # Looking for curve spikes in the rotations.
+                            if 60 < abs(gradient[1] - gradient[0]): # Looking for curve spikes in the rotations. Normally 90 degrees. Going for less
                                 for c, k in curves.iteritems():
                                     found[c] = k
                                 raise StopIteration
