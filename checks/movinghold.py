@@ -11,7 +11,6 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 
-# import base
 import itertools
 import collections
 import maya.cmds as cmds
@@ -37,21 +36,21 @@ The fix deletes any redundant keys along the hold, and slopes the curve slightly
     def filter(s, sel):
         """ Pull out relevant keys """
         found = collections.defaultdict(list)
-        for attr, keys in sel.iteritems():
+        for curve, keys in sel.iteritems():
             if 2 < len(keys): # Need more than three keys to make a moving hold
                 for k1, k2, k3 in shift(keys, 3):
                     if k1[1] == k2[1] and k2[1] == k3[1]:
-                        found[attr].append(k2)
+                        found[curve].append(k2)
         return found
 
     def fix(s, sel):
         """ Remove redundant keys and angle curve slightly """
         scale = 0.1
-        for attr, keys in sel.iteritems():
+        for curve, keys in sel.iteritems():
             segments = []
             segment = []
-            all_keys = cmds.keyframe(attr, q=True, tc=True)
-            all_vals = cmds.keyframe(attr, q=True, vc=True)
+            all_keys = cmds.keyframe(curve, q=True, tc=True)
+            all_vals = cmds.keyframe(curve, q=True, vc=True)
             if len(keys) == 1:
                 segment.append(keys[0])
             else:
@@ -63,7 +62,7 @@ The fix deletes any redundant keys along the hold, and slopes the curve slightly
                         segment = []
             segments.append(segment)
             for seg in segments:
-                cmds.cutKey(attr, t=(seg[0][0], seg[-1][0]), cl=True) # Delete segment
+                cmds.cutKey(curve, t=(seg[0][0], seg[-1][0]), cl=True) # Delete segment
                 next_ = all_keys.index(seg[-1][0]) + 1
                 next_frame = all_keys[next_] # Check next frame
                 if next_frame == all_keys[-1]: # We are at the end of the curve
@@ -74,18 +73,18 @@ The fix deletes any redundant keys along the hold, and slopes the curve slightly
                     else:
                         prev_val = all_vals[prev - 1]
                         new_val = (prev_val - seg[0][1]) * scale + seg[0][1]
-                        cmds.keyframe(attr, t=(prev_frame, prev_frame), e=True, vc=new_val)
+                        cmds.keyframe(curve, t=(prev_frame, prev_frame), e=True, vc=new_val)
                 else:
                     next_val = all_vals[next_ + 1]
                     new_val = (next_val - seg[0][1]) * scale + seg[0][1]
-                    cmds.keyframe(attr, t=(next_frame, next_frame), e=True, vc=new_val)
+                    cmds.keyframe(curve, t=(next_frame, next_frame), e=True, vc=new_val)
 
-
-if __name__ == '__main__':
-    attr = "pCube1.rotateX"
-    raw_keys = iter(cmds.keyframe(attr, q=True, tc=True, vc=True))
-    keys = zip(raw_keys, raw_keys)
-    data = {attr: tuple(keys)}
-    check = Movinghold_Check()
-    filtered = check.filter(data)
-    check.fix(filtered)
+#
+# if __name__ == '__main__':
+#     curve = "pCube1.rotateX"
+#     raw_keys = iter(cmds.keyframe(curve, q=True, tc=True, vc=True))
+#     keys = zip(raw_keys, raw_keys)
+#     data = {curve: tuple(keys)}
+#     check = Movinghold_Check()
+#     filtered = check.filter(data)
+#     check.fix(filtered)

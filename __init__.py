@@ -98,11 +98,10 @@ class Main(object):
         err = None
         cmds.undoInfo(openChunk=True)
         try:
-            cmds.select(clear=True)
-            for attr, keys in s.selection.get(mod, {}).iteritems():
-                cmds.select(attr.split(".")[0], add=True)
+            cmds.selectKey(clear=True)
+            for curve, keys in s.selection.get(mod, {}).iteritems():
                 for time, value in keys:
-                    cmds.selectKey(attr, t=(time,time), add=True, k=True)
+                    cmds.selectKey(curve, t=(time,time), add=True, k=True)
         except Exception as err:
             raise
         finally:

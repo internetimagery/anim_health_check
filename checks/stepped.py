@@ -11,11 +11,10 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 
-import base
 import collections
 import maya.cmds as cmds
 
-class Stepped_Check(base.Base_Check):
+class Stepped_Check(object):
     """ Check for stepped keys """
     def __init__(s):
         s.label = "Key Stepped Keys."
@@ -29,15 +28,15 @@ Be aware of any stepped tangents you might actually want to keep. Such as turnin
     def filter(s, sel):
         """ Pull out relevant keys """
         found = collections.defaultdict(list)
-        for attr, keys in sel.iteritems():
+        for curve, keys in sel.iteritems():
             for time, value in keys:
-                if cmds.keyTangent(attr, q=True, t=(time,time), ott=True)[0] == "step":
-                    found[attr].append((time, value))
+                if cmds.keyTangent(curve, q=True, t=(time,time), ott=True)[0] == "step":
+                    found[curve].append((time, value))
         return found
 
     def fix(s, sel):
         """ Change Stepped keys to Auto tangents """
-        for attr, keys in sel.iteritems():
+        for curve, keys in sel.iteritems():
             for time, value in keys:
-                cmds.keyTangent(attr, e=True, t=(time,time), ott="auto")
+                cmds.keyTangent(curve, e=True, t=(time,time), ott="auto")
         print "Stepped Keys Removed"

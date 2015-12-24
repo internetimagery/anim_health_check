@@ -11,7 +11,6 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 
-import base
 import itertools
 import collections
 import maya.cmds as cmds
@@ -24,7 +23,7 @@ def shift(iterable, size):
             b.next()
     return itertools.izip(*i)
 
-class DoubleUp_Check(base.Base_Check):
+class DoubleUp_Check(object):
     """ Check for doubleups """
     def __init__(s):
         s.label = "Key Double-ups."
@@ -37,26 +36,26 @@ The fix will place a keyframe on the next frame if possible to preserve the anim
     def filter(s, sel):
         """ Pull out relevant keys """
         found = collections.defaultdict(list)
-        for attr, keys in sel.iteritems():
+        for curve, keys in sel.iteritems():
             if 1 < len(keys): # Can't double up without two or more keys
                 for k1, k2 in shift(keys, 2):
                     if k2[0] < (k1[0] + 0.05): # 0.05 threshold
-                        found[attr].append(k2)
+                        found[curve].append(k2)
         return found
 
     def fix(s, sel):
         """ Remove double up keys preserving animation """
-        for attr, keys in sel.iteritems():
+        for curve, keys in sel.iteritems():
             for time, value in keys:
-                prev = cmds.findKeyframe(attr, t=(time, time), which="previous")
-                next_ = cmds.findKeyframe(attr, t=(time,time), which="next")
+                prev = cmds.findKeyframe(curve, t=(time, time), which="previous")
+                next_ = cmds.findKeyframe(curve, t=(time,time), which="next")
                 if prev == time: # First frame
-                    cmds.setKeyframe(attr, t=int(time), v=value)
+                    cmds.setKeyframe(curve, t=int(time), v=value)
                 elif next_ == time: # Last frame
-                    cmds.setKeyframe(attr, t=int(time) + 1, v=value)
+                    cmds.setKeyframe(curve, t=int(time) + 1, v=value)
                 else:
                     nxt_frame = int(time) + 1
-                    if not cmds.keyframe(attr, q=True, t=(nxt_frame,nxt_frame)):
-                        cmds.setKeyframe(attr, t=nxt_frame, i=True)
-                cmds.cutKey(attr, t=(time,time), cl=True)
-		print 'Doubleups Deteted.'
+                    if not cmds.keyframe(curve, q=True, t=(nxt_frame,nxt_frame)):
+                        cmds.setKeyframe(curve, t=nxt_frame, i=True)
+                cmds.cutKey(curve, t=(time,time), cl=True)
+		print 'Doubleups Cleared.'

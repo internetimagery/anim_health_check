@@ -13,7 +13,6 @@
 
 from __future__ import division
 
-# import base
 import math
 import itertools
 import collections
@@ -45,16 +44,16 @@ The fix places a key at the peak of the tangent or flattens the tangent.
     def filter(s, sel):
         """ Pull out relevant keys """
         found = collections.defaultdict(list)
-        for attr, keys in sel.iteritems():
+        for curve, keys in sel.iteritems():
             if 1 < len(keys): # Can't overshoot without two or more keys
-                for k1, k2 in shift(s.get_keys(attr), 2): # Use different key capturing mechanism
+                for k1, k2 in shift(s.get_keys(curve), 2): # Use different key capturing mechanism
                     test_time = k2[1][0]
-                    prev = cmds.findKeyframe(attr, t=(test_time, test_time), which="previous")
+                    prev = cmds.findKeyframe(curve, t=(test_time, test_time), which="previous")
                     if prev == k1[1][0] and k1[2]: # Do we have an out tangent?
                         overshoots = s.get_overshoots(k1[1], k1[2], k2[0], k2[1])
                         if overshoots:
-                            found[attr].append(k1[1])
-                            found[attr].append(k2[1])
+                            found[curve].append(k1[1])
+                            found[curve].append(k2[1])
         return found
 
     def fix(s, sel):
@@ -64,34 +63,33 @@ The fix places a key at the peak of the tangent or flattens the tangent.
             m="Would you like to key the overshoots or flatten them?",
             b=["Keyframe", "Flatten"])
         if answer == "Flatten":
-            for attr, keys in sel.iteritems():
+            for curve, keys in sel.iteritems():
                 for time, value in keys:
-                    cmds.keyTangent(attr, t=(time,time), itt="flat", ott="flat")
+                    cmds.keyTangent(curve, t=(time,time), itt="flat", ott="flat")
         else:
-            for attr, keys in sel.iteritems():
-                key_cache = dict((a[1][0], a) for a in s.get_keys(attr))
+            for curve, keys in sel.iteritems():
+                key_cache = dict((a[1][0], a) for a in s.get_keys(curve))
                 for k1, k2 in shift(keys, 2):
                     k1 = key_cache[k1[0]]
                     k2 = key_cache[k2[0]]
                     for overshoot in s.get_overshoots(k1[1], k1[2], k2[0], k2[1]):
-                        cmds.setKeyframe(attr, t=overshoot[0], itt="flat", ott="flat")
+                        cmds.setKeyframe(curve, t=overshoot[0], itt="flat", ott="flat")
 
-    def get_keys(s, attr):
-        """ Given an attribute snag all relevant keyframe information """
-        for curve in cmds.listConnections(attr, d=False, type="animCurve") or []:
-            temp_curve = cmds.duplicate(curve)[0] # Create a temporary curve to not destroy animation
-            try:
-                cmds.keyTangent(temp_curve, e=True, wt=True) # Turn on weighted tangents
-                keys = chunk(cmds.keyframe(temp_curve, q=True, tc=True, vc=True) or [], 2)
-                tangents = chunk(cmds.keyTangent(temp_curve, q=True, ia=True, oa=True, iw=True, ow=True, ott=True) or [], 5)
-                for key, tangent in itertools.izip(keys, tangents):
-                    p1, p2, p3 = s.get_points(*key + tangent[:-1])
-                    tangent_type = tangent[-1]
-                    if tangent_type == "step":
-                        p3 = None
-                    yield p1, p2, p3
-            finally:
-                cmds.delete(temp_curve)
+    def get_keys(s, curve):
+        """ Given a curve snag all relevant keyframe information """
+        temp_curve = cmds.duplicate(curve)[0] # Create a temporary curve to not destroy animation
+        try:
+            cmds.keyTangent(temp_curve, e=True, wt=True) # Turn on weighted tangents
+            keys = chunk(cmds.keyframe(temp_curve, q=True, tc=True, vc=True) or [], 2)
+            tangents = chunk(cmds.keyTangent(temp_curve, q=True, ia=True, oa=True, iw=True, ow=True, ott=True) or [], 5)
+            for key, tangent in itertools.izip(keys, tangents):
+                p1, p2, p3 = s.get_points(*key + tangent[:-1])
+                tangent_type = tangent[-1]
+                if tangent_type == "step":
+                    p3 = None
+                yield p1, p2, p3
+        finally:
+            cmds.delete(temp_curve)
 
     def get_points(s, time, value, in_angle, out_angle, in_weight, out_weight):
          """ Given details about a keyframe, pull out points. """
@@ -154,9 +152,9 @@ The fix places a key at the peak of the tangent or flattens the tangent.
         return points
 
 # if __name__ == '__main__':
-#     attr = "pCube1.rotateX"
-#     keys = chunk(cmds.keyframe(attr, q=True, tc=True, vc=True), 2)
-#     data = {attr: tuple(keys)}
+#     curve = "pCube1.rotateX"
+#     keys = chunk(cmds.keyframe(curve, q=True, tc=True, vc=True), 2)
+#     data = {curve: tuple(keys)}
 #     check = Overshoot_Check()
 #     filtered = check.filter(data)
 #     check.fix(filtered)
