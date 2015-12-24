@@ -67,6 +67,7 @@ The fix places a key at the peak of the tangent or flattens the tangent.
             for curve, keys in sel.iteritems():
                 for time, value in keys:
                     cmds.keyTangent(curve, t=(time,time), itt="flat", ott="flat")
+            print "Flattened overshoots"
         else:
             for curve, keys in sel.iteritems():
                 key_cache = dict((a[1][0], a) for a in s.get_keys(curve))
@@ -75,6 +76,7 @@ The fix places a key at the peak of the tangent or flattens the tangent.
                     k2 = key_cache[k2[0]]
                     for overshoot in s.get_overshoots(k1[1], k1[2], k2[0], k2[1]):
                         cmds.setKeyframe(curve, t=overshoot[0], itt="flat", ott="flat")
+            print "Keyed overshoots"
 
     def get_keys(s, curve):
         """ Given a curve snag all relevant keyframe information """

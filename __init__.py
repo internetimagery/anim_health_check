@@ -12,8 +12,9 @@
 # GNU General Public License for more details.
 
 import time
-import animsanity.checks as checks
-import animsanity.selection as selection
+import checks
+import report
+import selection
 import maya.cmds as cmds
 
 class Timer(object):
@@ -34,45 +35,48 @@ class Main(object):
     """ Main GUI """
     imgs = ['checkboxOff.png','checkboxOn.png','closeObject.png'] #images 0=not checked, 1=success, 2=failed
     def __init__(s):
-        s.modules = {} # Different Checks to perform
-        s.selection = {}
-        s._sel_monitor = cmds.ls(sl=True, type="transform")
-        s._curve_monitor = []
+        with report.Report():
+            s.modules = {} # Different Checks to perform
+            s.selection = {}
+            s._sel_monitor = cmds.ls(sl=True, type="transform")
+            s._curve_monitor = []
 
-        name = "animsanity"
-        if cmds.window(name, q=True, ex=True):
-            cmds.deleteUI(name)
+            name = "animsanity"
+            if cmds.window(name, q=True, ex=True):
+                cmds.deleteUI(name)
 
-        s.win = win = cmds.window(name, rtf=True, t="Animation Sanity!")
-        cmds.columnLayout(adj=True)
-        cmds.text(l="Select objects, attributes and / or keyframes you wish to check")
-        cmds.separator()
+            s.win = win = cmds.window(name, rtf=True, t="Animation Sanity!")
+            cmds.columnLayout(adj=True)
+            cmds.text(l="Select objects and attributes you wish to check")
+            cmds.separator()
 
-        cmds.text(l="Check for...", h=35)
+            cmds.text(l="Check for...", h=35)
 
-        col = cmds.columnLayout(adj=True)
-        # Add MODS
-        for mod in checks.modules:
-            gui = {}
-            cmds.rowLayout(nc=5, adj=2)
-            gui["img"] = cmds.image(i=s.imgs[0])
-            cmds.text(l=mod.label, al="left")
-            gui["btn"] = [
-                cmds.button(l="show", en=False, w=60, c=Callback(s.highlight_issues, mod)),
-                cmds.button(l="Fix it!", en=False, w=60, c=Callback(s.fix_issues, mod))]
-            cmds.button(l="?", w=30, c=Callback(s.help, mod))
-            cmds.setParent(col)
-            s.modules[mod] = gui
+            col = cmds.columnLayout(adj=True)
+            # Add MODS
+            for mod in checks.modules:
+                gui = {}
+                cmds.rowLayout(nc=5, adj=2)
+                gui["img"] = cmds.image(i=s.imgs[0])
+                cmds.text(l=mod.label, al="left")
+                gui["btn"] = [
+                    cmds.button(l="show", en=False, w=60, c=Callback(s.highlight_issues, mod)),
+                    cmds.button(l="Fix it!", en=False, w=60, c=Callback(s.fix_issues, mod))]
+                cmds.button(l="?", w=30, c=Callback(s.help, mod))
+                cmds.setParent(col)
+                s.modules[mod] = gui
 
-        cmds.setParent("..")
-        s.go_btn = cmds.button(l='Check Animation', h=50, c=Callback(s.filter_keys))
-        cmds.showWindow(win)
-        cmds.scriptJob(e=("SelectionChanged", s.monitor_selection_changes), p=win)
+            cmds.setParent("..")
+            s.go_btn = cmds.button(l='Check Animation', h=50, c=Callback(s.filter_keys))
+            cmds.button(l="reset", h=30, c=Callback(s.reset_gui))
+            cmds.showWindow(win)
+            cmds.scriptJob(e=("SelectionChanged", s.monitor_selection_changes), p=win)
 
     def help(s, module):
         """ Display Module Description """
         cmds.confirmDialog(t="What does this do?", m=module.description)
 
+    @report.Report()
     def monitor_selection_changes(s):
         """ Monitor Selection changes """
         sel = cmds.ls(sl=True, type="transform")
@@ -80,6 +84,7 @@ class Main(object):
             s._sel_monitor = sel
             s.reset_gui()
 
+    @report.Report()
     def monitor_curve_changes(s, curve):
         """ Monitor changes to a curve """
         # Curve changed. This makes our data invalid.
@@ -97,6 +102,7 @@ class Main(object):
                 cmds.button(btn, e=True, en=False)
         cmds.button(s.go_btn, e=True, en=True)
 
+    @report.Report()
     def filter_keys(s):
         """ Run through all modules and filter keys """
         sel = selection.get_selection()
@@ -112,6 +118,7 @@ class Main(object):
                 cmds.image(guis["img"], e=True, i=s.imgs[2 if filtered else 1])
         cmds.button(s.go_btn, e=True, en=False)
 
+    @report.Report()
     def highlight_issues(s, mod):
         """ Select all keys that cause issues """
         err = cmds.undoInfo(openChunk=True)
@@ -126,6 +133,7 @@ class Main(object):
             cmds.undoInfo(closeChunk=True)
             if err: cmds.undo()
 
+    @report.Report()
     def fix_issues(s, mod):
         """ Attempt to fix issues """
         s.reset_gui()
@@ -138,5 +146,3 @@ class Main(object):
             cmds.undoInfo(closeChunk=True)
             if err: cmds.undo()
         s.filter_keys()
-
-Main()

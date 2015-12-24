@@ -60,31 +60,24 @@ The fix deletes any redundant keys along the hold, and slopes the curve slightly
                     if all_keys[next_] != k2[0]: # end segment
                         segments.append(segment)
                         segment = []
+                segment.append(k2)
             segments.append(segment)
             for seg in segments:
-                cmds.cutKey(curve, t=(seg[0][0], seg[-1][0]), cl=True) # Delete segment
-                next_ = all_keys.index(seg[-1][0]) + 1
-                next_frame = all_keys[next_] # Check next frame
-                if next_frame == all_keys[-1]: # We are at the end of the curve
-                    prev = all_keys.index(seg[0][0]) - 1
-                    prev_frame = all_keys[prev]
-                    if prev_frame == all_keys[0]: # We have cleared all keyframes
-                        pass # We don't need to adjust the keyframes
+                if seg:
+                    cmds.cutKey(curve, t=(seg[0][0]-0.01, seg[-1][0]+0.01), cl=True) # Delete segment
+                    next_ = all_keys.index(seg[-1][0]) + 1
+                    next_frame = all_keys[next_] # Check next frame
+                    if next_frame == all_keys[-1]: # We are at the end of the curve
+                        prev = all_keys.index(seg[0][0]) - 1
+                        prev_frame = all_keys[prev]
+                        if prev_frame == all_keys[0]: # We have cleared all keyframes
+                            pass # We don't need to adjust the keyframes
+                        else:
+                            prev_val = all_vals[prev - 1]
+                            new_val = (prev_val - seg[0][1]) * scale + seg[0][1]
+                            cmds.keyframe(curve, t=(prev_frame, prev_frame), e=True, vc=new_val)
                     else:
-                        prev_val = all_vals[prev - 1]
-                        new_val = (prev_val - seg[0][1]) * scale + seg[0][1]
-                        cmds.keyframe(curve, t=(prev_frame, prev_frame), e=True, vc=new_val)
-                else:
-                    next_val = all_vals[next_ + 1]
-                    new_val = (next_val - seg[0][1]) * scale + seg[0][1]
-                    cmds.keyframe(curve, t=(next_frame, next_frame), e=True, vc=new_val)
-
-#
-# if __name__ == '__main__':
-#     curve = "pCube1.rotateX"
-#     raw_keys = iter(cmds.keyframe(curve, q=True, tc=True, vc=True))
-#     keys = zip(raw_keys, raw_keys)
-#     data = {curve: tuple(keys)}
-#     check = Movinghold_Check()
-#     filtered = check.filter(data)
-#     check.fix(filtered)
+                        next_val = all_vals[next_ + 1]
+                        new_val = (next_val - seg[0][1]) * scale + seg[0][1]
+                        cmds.keyframe(curve, t=(next_frame, next_frame), e=True, vc=new_val)
+        print "Moving holds sorted."
