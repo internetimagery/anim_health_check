@@ -45,7 +45,7 @@ class Main(object):
             if cmds.window(name, q=True, ex=True):
                 cmds.deleteUI(name)
 
-            s.win = win = cmds.window(name, rtf=True, t="Animation Sanity!")
+            s.win = win = cmds.window(name, rtf=True, t="Animation Health Check!")
             cmds.columnLayout(adj=True)
             cmds.text(l="Select objects and attributes you wish to check")
             cmds.separator()
