@@ -13,13 +13,13 @@
 
 import os
 import time
-import anim_health_check.checks as checks
-import anim_health_check.report as report
+import checks
+import report
 import os.path
 import itertools
 import threading
 import traceback
-import anim_health_check.selection as selection
+import selection
 import maya.cmds as cmds
 import maya.utils as utils
 
@@ -142,6 +142,7 @@ class Main(object):
             for btn in gui["btn"]:
                 cmds.button(btn, e=True, en=False)
         cmds.button(s.go_btn, e=True, en=True)
+        s.EKG.img_index = 0
 
     @report.Report()
     def filter_keys(s):
@@ -150,6 +151,7 @@ class Main(object):
         if not sel: return cmds.confirmDialog(t="Whoops...", m="Nothing selected.")
         for curve in sel: # Track changes to the curve
             s._curve_monitor.append(cmds.scriptJob(ac=("%s.a" % curve, Callback(s.monitor_curve_changes, curve)), p=s.win))
+        ok = True
         for mod in s.modules:
             with Timer("Checking %s" % mod.label):
                 s.selection[mod] = filtered = mod.filter(sel)
@@ -157,7 +159,9 @@ class Main(object):
                 for gui in guis["btn"]:
                     cmds.button(gui, e=True, en=True if filtered else False)
                 cmds.image(guis["img"], e=True, i=s.imgs[2 if filtered else 1])
+                if filtered: ok = False
         cmds.button(s.go_btn, e=True, en=False)
+        s.EKG.img_index = 1 if ok else 2
 
     @report.Report()
     def highlight_issues(s, mod):
