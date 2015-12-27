@@ -11,11 +11,49 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 
+import os
 import time
-import checks
-import report
-import selection
+import anim_health_check.checks as checks
+import anim_health_check.report as report
+import os.path
+import itertools
+import threading
+import traceback
+import anim_health_check.selection as selection
 import maya.cmds as cmds
+import maya.utils as utils
+
+def get_images():
+    root = os.path.join(os.path.dirname(__file__), "img")
+    return dict((a, itertools.cycle(os.path.join(root, a, b).replace("\\", "/") for b in os.listdir(os.path.join(root, a)))) for a in os.listdir(root))
+
+class EKG(object):
+    """ EKG machine """
+    def __init__(s):
+        root = os.path.dirname(__file__)
+        root_img = os.path.join(root, "img")
+        neutral = itertools.cycle(os.path.join(root_img, "neutral", a).replace("\\", "/") for a in os.listdir(os.path.join(root_img, "neutral")))
+        healthy = itertools.cycle(os.path.join(root_img, "healthy", a).replace("\\", "/") for a in os.listdir(os.path.join(root_img, "healthy")))
+        dead = itertools.cycle(os.path.join(root_img, "dead", a).replace("\\", "/") for a in os.listdir(os.path.join(root_img, "dead")))
+        s.imgs = itertools.izip(neutral, healthy, dead)
+        s.img_index = 0 # Which image to display. 0 = neutral, 1 = healthy, 2 = dead
+        s.gui = cmds.image(w=400, h=150)
+        threading.Thread(target=s.run).start()
+
+    def run(s):
+        block = threading.Semaphore()
+        fps = 1.0 / 24
+        while True:
+            time.sleep(fps)
+            block.acquire()
+            if not utils.executeInMainThreadWithResult(block.release() or s.change_image):
+                break
+
+    def change_image(s):
+        if cmds.image(s.gui, q=True, ex=True):
+            cmds.image(s.gui, e=True, i=next(s.imgs)[s.img_index])
+            return True
+
 
 class Timer(object):
     """ Time the running of actions """
@@ -48,6 +86,9 @@ class Main(object):
             s.win = win = cmds.window(name, rtf=True, t="Animation Health Check!")
             cmds.columnLayout(adj=True)
             cmds.text(l="Select objects and attributes you wish to check")
+
+            cmds.separator()
+            s.EKG = EKG()
             cmds.separator()
 
             cmds.text(l="Check for...", h=35)
