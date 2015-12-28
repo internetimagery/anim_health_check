@@ -38,21 +38,23 @@ class EKG(object):
         s.imgs = itertools.izip(neutral, healthy, dead)
         s.img_index = 0 # Which image to display. 0 = neutral, 1 = healthy, 2 = dead
         s.gui = cmds.image(w=400, h=150)
+        s.running = True
+        s.block = threading.Semaphore()
         threading.Thread(target=s.run).start()
 
     def run(s):
-        block = threading.Semaphore()
         fps = 1.0 / 24
-        while True:
+        while s.running:
             time.sleep(fps)
-            block.acquire()
-            if not utils.executeInMainThreadWithResult(block.release() or s.change_image):
-                break
+            s.block.acquire()
+            utils.executeDeferred(s.change_image)
 
     def change_image(s):
-        if cmds.image(s.gui, q=True, ex=True):
+        s.block.release()
+        try:
             cmds.image(s.gui, e=True, i=next(s.imgs)[s.img_index])
-            return True
+        except:
+            s.running = False
 
 
 class Timer(object):
@@ -85,7 +87,7 @@ class Main(object):
 
             s.win = win = cmds.window(name, rtf=True, t="Animation Health Check!")
             cmds.columnLayout(adj=True)
-            cmds.text(l="Select objects and attributes you wish to check")
+            cmds.text(h=30, l="Select objects and attributes you wish to check")
 
             cmds.separator()
             s.EKG = EKG()
