@@ -1,4 +1,4 @@
-# Animsanity
+# Animation Health Check
 
 A set of modules that run together to check over your animation for technical issues. Not perfect, but can be a time saver if used well.
 
@@ -10,8 +10,8 @@ Simply copy the folder into your scripts directory in Maya. The folder should be
 
 Within Maya, create a shelf icon with the following PYTHON code:
 
-	import animsanity
-	animsanity.Main()
+	import anim_health_check
+	anim_health_check.Main()
 
 * Select your object / control to check the animations.
 
