@@ -56,8 +56,11 @@ The fix runs a euler filter on the channels.
                 for i, t, v in itertools.izip(keys, keys, keys):
                     if not i:
                         c = next(curves)
-                    if v != sel[c][t]: # value changed?
-                        found[c][t] = v
+                    try:
+                        if v != sel[c][t]: # value changed?
+                            found[c][t] = v
+                    except KeyError:
+                        pass
             finally:
                 cmds.undoInfo(closeChunk=True)
                 cmds.undo()
