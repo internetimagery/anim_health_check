@@ -42,7 +42,7 @@ The fix will place a keyframe on the next frame if possible to preserve the anim
         for curve, keys in sel.iteritems():
             if 1 < len(keys): # Can't double up without two or more keys
                 for (t1, v1), (t2, v2) in shift(keys.iteritems(), 2):
-                    if t2[0] < (t1[0] + 0.05): # 0.05 threshold
+                    if t2 < (t1 + 0.05): # 0.05 threshold
                         found[curve][t2] = v2
         return found
 

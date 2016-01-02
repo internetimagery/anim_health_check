@@ -41,7 +41,7 @@ The fix deletes any redundant keys along the hold, and slopes the curve slightly
         found = collections.defaultdict(collections.OrderedDict)
         for curve, keys in sel.iteritems():
             if 2 < len(keys): # Need more than three keys to make a moving hold
-                for k1, k2, k3 in shift(keys, 3):
+                for k1, k2, k3 in shift(keys.iteritems(), 3):
                     if k1[1] == k2[1] and k2[1] == k3[1]:
                         found[curve][k2[0]] = k2[1]
         return found
