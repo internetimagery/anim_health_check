@@ -43,18 +43,17 @@ The fix places a key at the peak of the tangent or flattens the tangent.
 
     def filter(s, sel):
         """ Pull out relevant keys """
-        found = collections.defaultdict(list)
+        found = collections.defaultdict(collections.OrderedDict)
         for curve, keys in sel.iteritems():
             if 1 < len(keys): # Can't overshoot without two or more keys
-                all_times = set(a[0] for a in keys)
-                for k1, k2 in shift((a for a in s.get_keys(curve) if a[1][0] in all_times), 2): # Use different key capturing mechanism
+                for k1, k2 in shift((a for a in s.get_keys(curve) if a[1][0] in keys.iteritems()), 2): # Use different key capturing mechanism
                     test_time = k2[1][0]
                     prev = cmds.findKeyframe(curve, t=(test_time, test_time), which="previous")
                     if prev == k1[1][0] and k1[2]: # Do we have an out tangent?
                         overshoots = s.get_overshoots(k1[1], k1[2], k2[0], k2[1])
                         if overshoots:
-                            found[curve].append(k1[1])
-                            found[curve].append(k2[1])
+                            found[curve][k1[1][0]] = k1[1][1]
+                            found[curve][k2[1][0]] = k2[1][1]
         return found
 
     def fix(s, sel):
@@ -65,13 +64,13 @@ The fix places a key at the peak of the tangent or flattens the tangent.
             b=["Keyframe", "Flatten"])
         if answer == "Flatten":
             for curve, keys in sel.iteritems():
-                for time, value in keys:
+                for time, value in keys.iteritems():
                     cmds.keyTangent(curve, t=(time,time), itt="flat", ott="flat")
             print "Flattened overshoots"
         else:
             for curve, keys in sel.iteritems():
                 key_cache = dict((a[1][0], a) for a in s.get_keys(curve))
-                for k1, k2 in shift(keys, 2):
+                for k1, k2 in shift(keys.iteritems(), 2):
                     k1 = key_cache[k1[0]]
                     k2 = key_cache[k2[0]]
                     for overshoot in s.get_overshoots(k1[1], k1[2], k2[0], k2[1]):

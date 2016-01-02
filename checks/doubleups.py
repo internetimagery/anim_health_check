@@ -35,18 +35,18 @@ The fix will place a keyframe on the next frame if possible to preserve the anim
 
     def filter(s, sel):
         """ Pull out relevant keys """
-        found = collections.defaultdict(list)
+        found = collections.defaultdict(collections.OrderedDict)
         for curve, keys in sel.iteritems():
             if 1 < len(keys): # Can't double up without two or more keys
-                for k1, k2 in shift(keys, 2):
-                    if k2[0] < (k1[0] + 0.05): # 0.05 threshold
-                        found[curve].append(k2)
+                for (t1, v1), (t2, v2) in shift(keys.iteritems(), 2):
+                    if t2[0] < (t1[0] + 0.05): # 0.05 threshold
+                        found[curve][t2] = v2
         return found
 
     def fix(s, sel):
         """ Remove double up keys preserving animation """
         for curve, keys in sel.iteritems():
-            for time, value in keys:
+            for time, value in keys.iteritems():
                 prev = cmds.findKeyframe(curve, t=(time, time), which="previous")
                 next_ = cmds.findKeyframe(curve, t=(time,time), which="next")
                 if prev == time: # First frame

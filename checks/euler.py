@@ -41,7 +41,7 @@ The fix runs a euler filter on the channels.
 
     def filter(s, sel):
         """ Pull out relevant keys """
-        found = collections.defaultdict(list)
+        found = collections.defaultdict(collections.OrderedDict)
         axis = re.compile(r"(.+)rotate[XYZ]$") # Filter rotation axis
         rotation_curves = collections.defaultdict(dict)
         for curve, keys in sel.iteritems(): # Divide up channels
@@ -52,7 +52,7 @@ The fix runs a euler filter on the channels.
             try:
                 if 2 < len(curves): # We need all three channels
                     for curve, keys in curves.iteritems():
-                        for k1, k2 in shift(keys, 2):
+                        for k1, k2 in shift(keys.iteritems(), 2):
                             middle = (k2[0] - k1[0]) * 0.5 + k1[0]
                             bounds = int(middle), int(middle)+1 # assume middle of curve is steepest part
 

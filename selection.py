@@ -18,6 +18,7 @@
 
 import functools
 import itertools
+import collections
 import maya.mel as mel
 import maya.cmds as cmds
 
@@ -72,11 +73,11 @@ def get_selection():
     """
     sel = cmds.ls(sl=True, type="transform")
     if not sel: return {}
-    # sel_keys = dict((a, tuple(b)) for a, b in get_selected_keys(sel))
+    # sel_keys = dict((a, collections.OrderedDict(b)) for a, b in get_selected_keys(sel))
     # if sel_keys: return sel_keys # If we have selected keyframes. This overrides all!
 
     min_, max_ = get_frame_range() # Get frame range
-    all_keys = dict((a, tuple((c, d) for c, d in b if min_ <= c <= max_)) for a, b in get_all_keys(sel)) # And all keyframes
+    all_keys = dict((a, collections.OrderedDict((c, d) for c, d in b if min_ <= c <= max_)) for a, b in get_all_keys(sel)) # And all keyframes
 
     filter_ = tuple(get_graph_attributes()) or tuple(get_channelbox_attributes()) # Get any other selections
 

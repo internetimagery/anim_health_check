@@ -27,11 +27,11 @@ The fix will put keys on whole frames.
 
     def filter(s, sel):
         """ Pull out relevant keys """
-        found = collections.defaultdict(list)
+        found = collections.defaultdict(collections.OrderedDict)
         for curve, keys in sel.iteritems():
-            for time, value in keys:
+            for time, value in keys.iteritems():
                 if time % 1:
-                    found[curve].append((time, value))
+                    found[curve][time] = value
         return found
 
     def is_peak(s, curve, time, value):
@@ -54,7 +54,7 @@ The fix will put keys on whole frames.
         num_keys = functools.partial(cmds.keyframe, q=True, kc=True)
         move = functools.partial(cmds.keyframe, a=True)
         for curve, keys in sel.iteritems():
-            for time, value in keys:
+            for time, value in keys.iteritems():
                 if time % 1 > 0.5: # Which side do we favour?
                     alt = int(time)
                     pref = alt + 1 # Preferred time

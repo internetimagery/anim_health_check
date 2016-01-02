@@ -27,16 +27,16 @@ Be aware of any stepped tangents you might actually want to keep. Such as turnin
 
     def filter(s, sel):
         """ Pull out relevant keys """
-        found = collections.defaultdict(list)
+        found = collections.defaultdict(collections.OrderedDict)
         for curve, keys in sel.iteritems():
-            for time, value in keys:
+            for time, value in keys.iteritems():
                 if cmds.keyTangent(curve, q=True, t=(time,time), ott=True)[0] == "step":
-                    found[curve].append((time, value))
+                    found[curve][time] = value
         return found
 
     def fix(s, sel):
         """ Change Stepped keys to Auto tangents """
         for curve, keys in sel.iteritems():
-            for time, value in keys:
+            for time, value in keys.iteritems():
                 cmds.keyTangent(curve, e=True, t=(time,time), ott="auto")
         print "Stepped Keys Removed"

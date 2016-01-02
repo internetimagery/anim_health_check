@@ -161,7 +161,7 @@ class Main(object):
                 for gui in guis["btn"]:
                     cmds.button(gui, e=True, en=True if filtered else False)
                 cmds.image(guis["img"], e=True, i=s.imgs[2 if filtered else 1])
-                if filtered: ok = False
+                if filtered: ok = False # There are issues
         cmds.button(s.go_btn, e=True, en=False)
         s.EKG.img_index = 1 if ok else 2
 
@@ -172,7 +172,7 @@ class Main(object):
         try:
             cmds.selectKey(clear=True)
             for curve, keys in s.selection.get(mod, {}).iteritems():
-                for time, value in keys:
+                for time, value in keys.iteritems():
                     cmds.selectKey(curve, t=(time,time), add=True, k=True)
         except Exception as err:
             raise
