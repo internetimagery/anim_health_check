@@ -45,31 +45,29 @@ The fix runs a euler filter on the channels.
     def filter(s, sel):
         """ Pull out relevant keys """
         found = collections.defaultdict(collections.OrderedDict)
-        axis = re.compile(r"(.+)rotate[XYZ]$") # Filter rotation axis
-        rotation_curves = collections.defaultdict(dict)
-        for curve, keys in sel.iteritems(): # Divide up channels
-            name = axis.match(curve)
-            if name:
-                rotation_curves[name.group(1)][curve] = keys
-        for obj, curves in rotation_curves.iteritems():
+        if sel:
+            cmds.undoInfo(openChunk=True)
             try:
-                if 2 < len(curves): # We need all three channels
-                    for curve, keys in curves.iteritems():
-                        for k1, k2 in shift(keys.iteritems(), 2):
-                            middle = (k2[0] - k1[0]) * 0.5 + k1[0]
-                            bounds = int(middle), int(middle)+1 # assume middle of curve is steepest part
-
-                            gradient = sorted(cmds.keyframe(curve, q=True, t=(a,a), ev=True)[0] for a in bounds)
-
-                            if 60 < abs(gradient[1] - gradient[0]): # Looking for curve spikes in the rotations. Normally 90 degrees. Going for less
-                                for c, k in curves.iteritems():
-                                    found[c] = k
-                                raise StopIteration
-            except StopIteration:
-                pass
+                cmds.filterCurve(sel.keys()) # Try euler filter
+                for curve, keys in sel.iteritems():
+                    new_vals = dict((a, b) for a, b in chunk(cmds.keyframe(curve, q=True, tc=True, vc=True) or [], 2) if a in keys)
+                    if keys != new_vals: # Check if anything changed
+                        for (t1, v1), (t2, v2) in itertools.izip(keys.iteritems(), new_vals.iteritems()):
+                            if v1 != v2:
+                                found[curve][t1] = v1
+            finally:
+                cmds.undoInfo(closeChunk=True)
+                cmds.undo()
         return found
 
     def fix(s, sel):
         """ Remove double up keys preserving animation """
         cmds.filterCurve(sel.keys())
         print "Euler filter applied"
+
+if __name__ == '__main__':
+    curves = cmds.keyframe("pCube1", q=True, n=True) or []
+    data = dict((a, collections.OrderedDict(chunk(cmds.keyframe(a, q=True, tc=True, vc=True), 2))) for a in curves)
+    mod = Euler_Check()
+    data = mod.filter(data)
+    mod.fix(data)
