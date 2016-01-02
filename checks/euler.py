@@ -25,7 +25,10 @@ def shift(iterable, size):
     i = itertools.tee(iterable, size)
     for a, b in enumerate(i):
         for c in range(a):
-            b.next()
+            try:
+                b.next()
+            except StopIteration:
+                pass
     return itertools.izip(*i)
 
 # http://www.creativecrash.com/forums/mel/topics/euler-filter-algorithm#discussion_post_103750

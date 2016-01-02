@@ -23,7 +23,10 @@ def shift(iterable, size):
     i = itertools.tee(iterable, size)
     for a, b in enumerate(i):
         for c in range(a):
-            b.next()
+            try:
+                b.next()
+            except StopIteration:
+                pass
     return itertools.izip(*i)
 
 def chunk(iterable, size, default=None):
@@ -46,7 +49,7 @@ The fix places a key at the peak of the tangent or flattens the tangent.
         found = collections.defaultdict(collections.OrderedDict)
         for curve, keys in sel.iteritems():
             if 1 < len(keys): # Can't overshoot without two or more keys
-                for k1, k2 in shift((a for a in s.get_keys(curve) if a[1][0] in keys.iteritems()), 2): # Use different key capturing mechanism
+                for k1, k2 in shift((a for a in s.get_keys(curve) if a[1][0] in keys), 2): # Use different key capturing mechanism
                     test_time = k2[1][0]
                     prev = cmds.findKeyframe(curve, t=(test_time, test_time), which="previous")
                     if prev == k1[1][0] and k1[2]: # Do we have an out tangent?

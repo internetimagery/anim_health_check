@@ -20,7 +20,10 @@ def shift(iterable, size):
     i = itertools.tee(iterable, size)
     for a, b in enumerate(i):
         for c in range(a):
-            b.next()
+            try:
+                b.next()
+            except StopIteration:
+                pass
     return itertools.izip(*i)
 
 class DoubleUp_Check(object):
