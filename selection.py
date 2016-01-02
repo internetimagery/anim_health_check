@@ -58,9 +58,16 @@ def get_frame_range():
 
 def get_all_keys(objs):
     """ Given a list of objects. Get all attributes and keyframes """
-    for curve in cmds.keyframe(objs, q=True, n=True) or []:
-        keys = chunk(cmds.keyframe(curve, q=True, tc=True, vc=True) or [], 2)
-        yield curve, keys
+    curves = cmds.keyframe(objs, q=True, n=True) or []
+    keys = iter(cmds.keyframe(curves, q=True, iv=True, tc=True, vc=True) or [])
+    next(keys) # Drop off first index
+    def grab_keys(): # Pull out keyframes
+        index = True
+        while index:
+            yield next(keys), next(keys)
+            index = next(keys)
+    for curve in curves:
+        yield curve, grab_keys()
 
 def get_selection():
     """

@@ -151,8 +151,6 @@ class Main(object):
         """ Run through all modules and filter keys """
         sel = selection.get_selection()
         if not sel: return cmds.confirmDialog(t="Whoops...", m="Nothing selected.")
-        for curve in sel: # Track changes to the curve
-            s._curve_monitor.append(cmds.scriptJob(ac=("%s.a" % curve, Callback(s.monitor_curve_changes, curve)), p=s.win))
         ok = True
         for mod in s.modules:
             with Timer("Checking %s" % mod.label):
@@ -163,6 +161,8 @@ class Main(object):
                 cmds.image(guis["img"], e=True, i=s.imgs[2 if filtered else 1])
                 if filtered: ok = False # There are issues
         cmds.button(s.go_btn, e=True, en=False)
+        for curve in sel: # Track changes to the curve
+            s._curve_monitor.append(cmds.scriptJob(ac=("%s.a" % curve, Callback(s.monitor_curve_changes, curve)), p=s.win))
         s.EKG.img_index = 1 if ok else 2
 
     @report.Report()

@@ -37,7 +37,7 @@ class Euler_Check(object):
     def __init__(s):
         s.label = "Clean Rotations."
         s.description = """
-Checks for gimbal pops in rotation channels. Will only work if you've got animation on all three rotation channels and have them in the selection.
+Checks for gimbal pops in rotation channels.
 
 The fix runs a euler filter on the channels.
 """
@@ -45,16 +45,19 @@ The fix runs a euler filter on the channels.
     def filter(s, sel):
         """ Pull out relevant keys """
         found = collections.defaultdict(collections.OrderedDict)
+        tmp = collections.defaultdict(collections.OrderedDict)
         if sel:
             cmds.undoInfo(openChunk=True)
             try:
-                cmds.filterCurve(sel.keys()) # Try euler filter
-                for curve, keys in sel.iteritems():
-                    new_vals = dict((a, b) for a, b in chunk(cmds.keyframe(curve, q=True, tc=True, vc=True) or [], 2) if a in keys)
-                    if keys != new_vals: # Check if anything changed
-                        for (t1, v1), (t2, v2) in itertools.izip(keys.iteritems(), new_vals.iteritems()):
-                            if v1 != v2:
-                                found[curve][t1] = v1
+                curves = sel.keys()
+                cmds.filterCurve(curves) # Try euler filter
+                keys = iter(cmds.keyframe(curves, q=True, iv=True, tc=True, vc=True) or [])
+                curves = iter(curves)
+                for i, t, v in itertools.izip(keys, keys, keys):
+                    if not i:
+                        c = next(curves)
+                    if v != sel[c][t]: # value changed?
+                        found[c][t] = v
             finally:
                 cmds.undoInfo(closeChunk=True)
                 cmds.undo()
@@ -70,4 +73,5 @@ if __name__ == '__main__':
     data = dict((a, collections.OrderedDict(chunk(cmds.keyframe(a, q=True, tc=True, vc=True), 2))) for a in curves)
     mod = Euler_Check()
     data = mod.filter(data)
-    mod.fix(data)
+    print data
+    if data: mod.fix(data)
