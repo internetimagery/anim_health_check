@@ -156,10 +156,10 @@ The fix places a key at the peak of the tangent or flattens the tangent.
                 points.append((x, y))
         return points
 
-# if __name__ == '__main__':
-#     curve = "pCube1.rotateX"
-#     keys = chunk(cmds.keyframe(curve, q=True, tc=True, vc=True), 2)
-#     data = {curve: tuple(keys)}
-#     check = Overshoot_Check()
-#     filtered = check.filter(data)
-#     check.fix(filtered)
+if __name__ == '__main__':
+    curves = cmds.keyframe("pCube1", q=True, n=True)
+    keys = chunk(cmds.keyframe(curve, q=True, tc=True, vc=True), 2)
+    data = dict((a, tuple(chunk(cmds.keyframe(a, q=True, tc=True, vc=True), 2))) for a in curves)
+    check = Overshoot_Check()
+    filtered = check.filter(data)
+    check.fix(filtered)
