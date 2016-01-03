@@ -171,11 +171,11 @@ class Main(object):
         """ Select all keys that cause issues """
         err = cmds.undoInfo(openChunk=True)
         try:
-            cmds.selectKey(clear=True)
             select = collections.defaultdict(list) # Flip selection for efficiency
             for curve, keys in s.selection.get(mod, {}).iteritems():
                 for t in keys:
                     select[t].append(curve)
+            cmds.selectKey(clear=True)
             for t, curves in select.iteritems(): # Select keyframes
                 cmds.selectKey(curves, t=(t,t), add=True, k=True)
         except Exception as err:

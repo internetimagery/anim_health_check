@@ -30,7 +30,7 @@ class DoubleUp_Check(object):
     def __init__(s):
         s.label = "Key Double-ups."
         s.description = """
-Checks for keys occupying the same frame.
+Checks for keys occupying the same frame (ie extremely close together).
 
 The fix will place a keyframe on the next frame if possible to preserve the animation, and remove the double-up key.
 """
