@@ -80,11 +80,11 @@ The fix places a key at the peak of the tangent or flattens the tangent.
     def get_points(s, curves):
         """ Given Curves, get corresponding points """
         result = collections.defaultdict(list)
-        tmp_curves = cmds.duplicate(curves) or [] # Make dupe
+        cmds.undoInfo(openChunk=True)
         try:
-            cmds.keyTangent(tmp_curves, e=True, wt=True) # Ensure weighted tangents
-            keys = chunk(cmds.keyframe(tmp_curves, q=True, iv=True, tc=True, vc=True) or [], 3)
-            tangents = chunk(cmds.keyTangent(tmp_curves, q=True, ott=True, ia=True, oa=True, iw=True, ow=True) or [], 5)
+            cmds.keyTangent(curves, e=True, wt=True) # Ensure weighted tangents
+            keys = chunk(cmds.keyframe(curves, q=True, iv=True, tc=True, vc=True) or [], 3)
+            tangents = chunk(cmds.keyTangent(curves, q=True, ott=True, ia=True, oa=True, iw=True, ow=True) or [], 5)
             curve_iter = iter(curves)
             for (i, t, v), (ia, oa, iw, ow, ott) in itertools.izip(keys, tangents):
                 if not i:
@@ -99,7 +99,8 @@ The fix places a key at the peak of the tangent or flattens the tangent.
                     p3 = math.cos(oa) * ow + t, math.sin(oa) * ow + v
                 result[curve].append((p1, p2, p3))
         finally:
-            cmds.delete(tmp_curves)
+            cmds.undoInfo(closeChunk=True)
+            cmds.undo()
         return result
 
     # Reference : http://stackoverflow.com/questions/2587751/an-algorithm-to-find-bounding-box-of-closed-bezier-curves
@@ -154,8 +155,15 @@ The fix places a key at the peak of the tangent or flattens the tangent.
         return points
 
 if __name__ == '__main__':
+    import time
     curves = cmds.keyframe(cmds.ls(sl=True, type="transform"), q=True, n=True)
     data = dict((a, dict(chunk(cmds.keyframe(a, q=True, tc=True, vc=True), 2))) for a in curves)
     check = Overshoot_Check()
+    start = time.time()
+    print "hello"
     filtered = check.filter(data)
-    check.fix(filtered)
+    took = time.time() - start
+    import pprint
+    cmds.scriptJob(ie=lambda: pprint.pprint("Took: %sms" % (took * 1000)), ro=True)
+
+    # check.fix(filtered)
