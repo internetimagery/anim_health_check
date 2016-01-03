@@ -24,10 +24,6 @@ import collections
 import maya.cmds as cmds
 import maya.utils as utils
 
-def get_images():
-    root = os.path.join(os.path.dirname(__file__), "img")
-    return dict((a, itertools.cycle(os.path.join(root, a, b).replace("\\", "/") for b in os.listdir(os.path.join(root, a)))) for a in os.listdir(root))
-
 class EKG(object):
     """ EKG machine """
     def __init__(s):
