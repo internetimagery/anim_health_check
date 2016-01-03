@@ -11,6 +11,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 
+import itertools
 import collections
 import maya.cmds as cmds
 
@@ -28,10 +29,15 @@ Be aware of any stepped tangents you might actually want to keep. Such as turnin
     def filter(s, sel):
         """ Pull out relevant keys """
         found = collections.defaultdict(collections.OrderedDict)
-        for curve, keys in sel.iteritems():
-            for time, value in keys.iteritems():
-                if cmds.keyTangent(curve, q=True, t=(time,time), ott=True)[0] == "step":
-                    found[curve][time] = value
+        curves = sel.keys()
+        keys = iter(cmds.keyframe(curves, q=True, iv=True, tc=True, vc=True) or [])
+        tangents = cmds.keyTangent(curves, q=True, ott=True) or []
+        curves_iter = iter(curves)
+        for i, t, v, ott in itertools.izip(keys, keys, keys, tangents):
+            if not i:
+                curve = next(curves_iter)
+            if t in sel[curve] and ott == "step":
+                found[curve][t] = v
         return found
 
     def fix(s, sel):
@@ -40,3 +46,13 @@ Be aware of any stepped tangents you might actually want to keep. Such as turnin
             for time, value in keys.iteritems():
                 cmds.keyTangent(curve, e=True, t=(time,time), ott="auto")
         print "Stepped Keys Removed"
+
+# if __name__ == '__main__':
+#     import time, pprint
+#     curves = cmds.keyframe(cmds.ls(sl=True, type="transform"), q=True, n=True)
+#     data = dict((a, dict(chunk(cmds.keyframe(a, q=True, tc=True, vc=True), 2))) for a in curves)
+#     check = Stepped_Check()
+#     start = time.time()
+#     filtered = check.filter(data)
+#     took = time.time() - start
+#     cmds.scriptJob(ie=lambda: pprint.pprint("Took: %sms" % (took * 1000)), ro=True)
