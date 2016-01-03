@@ -12,7 +12,6 @@
 # GNU General Public License for more details.
 
 import itertools
-import collections
 import maya.cmds as cmds
 
 class Stepped_Check(object):
@@ -26,9 +25,8 @@ The fix changes those tangents to AUTO.
 Be aware of any stepped tangents you might actually want to keep. Such as turning on and off constraints.
 """
 
-    def filter(s, sel):
+    def filter(s, sel, found):
         """ Pull out relevant keys """
-        found = collections.defaultdict(collections.OrderedDict)
         curves = sel.keys()
         keys = iter(cmds.keyframe(curves, q=True, iv=True, tc=True, vc=True) or [])
         tangents = cmds.keyTangent(curves, q=True, ott=True) or []

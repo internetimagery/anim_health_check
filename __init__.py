@@ -20,6 +20,7 @@ import itertools
 import threading
 import traceback
 import selection
+import collections
 import maya.cmds as cmds
 import maya.utils as utils
 
@@ -154,7 +155,7 @@ class Main(object):
         ok = True
         for mod in s.modules:
             with Timer("Checking %s" % mod.label):
-                s.selection[mod] = filtered = mod.filter(sel)
+                s.selection[mod] = filtered = mod.filter(sel, collections.defaultdict(collections.OrderedDict))
                 guis = s.modules[mod]
                 for gui in guis["btn"]:
                     cmds.button(gui, e=True, en=True if filtered else False)
@@ -171,9 +172,12 @@ class Main(object):
         err = cmds.undoInfo(openChunk=True)
         try:
             cmds.selectKey(clear=True)
+            select = collections.defaultdict(list) # Flip selection for efficiency
             for curve, keys in s.selection.get(mod, {}).iteritems():
-                for time, value in keys.iteritems():
-                    cmds.selectKey(curve, t=(time,time), add=True, k=True)
+                for t in keys:
+                    select[t].append(curve)
+            for t, curves in select.iteritems(): # Select keyframes
+                cmds.selectKey(curves, t=(t,t), add=True, k=True)
         except Exception as err:
             raise
         finally:

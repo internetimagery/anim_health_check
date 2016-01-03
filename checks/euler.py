@@ -11,9 +11,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 
-import re
 import itertools
-import collections
 import maya.cmds as cmds
 
 def chunk(iterable, size, default=None):
@@ -24,11 +22,11 @@ def shift(iterable, size):
     """ iterate in groups ie [1,2,3] [2,3,4] """
     i = itertools.tee(iterable, size)
     for a, b in enumerate(i):
-        for c in range(a):
-            try:
+        try:
+            for c in range(a):
                 b.next()
-            except StopIteration:
-                pass
+        except StopIteration:
+            pass
     return itertools.izip(*i)
 
 # http://www.creativecrash.com/forums/mel/topics/euler-filter-algorithm#discussion_post_103750
@@ -42,10 +40,8 @@ Checks for gimbal pops in rotation channels.
 The fix runs a euler filter on the channels.
 """
 
-    def filter(s, sel):
+    def filter(s, sel, found):
         """ Pull out relevant keys """
-        found = collections.defaultdict(collections.OrderedDict)
-        tmp = collections.defaultdict(collections.OrderedDict)
         if sel:
             cmds.undoInfo(openChunk=True)
             try:

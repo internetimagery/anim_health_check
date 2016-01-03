@@ -12,18 +12,17 @@
 # GNU General Public License for more details.
 
 import itertools
-import collections
 import maya.cmds as cmds
 
 def shift(iterable, size):
     """ iterate in groups ie [1,2,3] [2,3,4] """
     i = itertools.tee(iterable, size)
     for a, b in enumerate(i):
-        for c in range(a):
-            try:
+        try:
+            for c in range(a):
                 b.next()
-            except StopIteration:
-                pass
+        except StopIteration:
+            pass
     return itertools.izip(*i)
 
 class DoubleUp_Check(object):
@@ -36,9 +35,8 @@ Checks for keys occupying the same frame.
 The fix will place a keyframe on the next frame if possible to preserve the animation, and remove the double-up key.
 """
 
-    def filter(s, sel):
+    def filter(s, sel, found):
         """ Pull out relevant keys """
-        found = collections.defaultdict(collections.OrderedDict)
         for curve, keys in sel.iteritems():
             if 1 < len(keys): # Can't double up without two or more keys
                 for (t1, v1), (t2, v2) in shift(keys.iteritems(), 2):

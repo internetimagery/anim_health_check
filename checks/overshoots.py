@@ -44,9 +44,8 @@ This checks for curves that go beyond any surrounding keys.
 The fix places a key at the peak of the tangent or flattens the tangent.
 """
 
-    def filter(s, sel):
+    def filter(s, sel, found):
         """ Pull out relevant keys """
-        found = collections.defaultdict(collections.OrderedDict)
         for curve, points in s.get_points(sel.keys()).iteritems():
             if 1 < len(points): # No overshoots if only one keyframe
                 for (_, p1, p2), (p3, p4, _) in shift(points, 2):
@@ -100,7 +99,7 @@ The fix places a key at the peak of the tangent or flattens the tangent.
                 result[curve].append((p1, p2, p3))
         finally:
             cmds.undoInfo(closeChunk=True)
-            cmds.undo()
+            cmds.undo() # Reset our changes to the curve
         return result
 
     # Reference : http://stackoverflow.com/questions/2587751/an-algorithm-to-find-bounding-box-of-closed-bezier-curves
@@ -154,16 +153,16 @@ The fix places a key at the peak of the tangent or flattens the tangent.
                 points.append((x, y))
         return points
 
-if __name__ == '__main__':
-    import time
-    curves = cmds.keyframe(cmds.ls(sl=True, type="transform"), q=True, n=True)
-    data = dict((a, dict(chunk(cmds.keyframe(a, q=True, tc=True, vc=True), 2))) for a in curves)
-    check = Overshoot_Check()
-    start = time.time()
-    print "hello"
-    filtered = check.filter(data)
-    took = time.time() - start
-    import pprint
-    cmds.scriptJob(ie=lambda: pprint.pprint("Took: %sms" % (took * 1000)), ro=True)
-
-    # check.fix(filtered)
+# if __name__ == '__main__':
+#     import time
+#     curves = cmds.keyframe(cmds.ls(sl=True, type="transform"), q=True, n=True)
+#     data = dict((a, dict(chunk(cmds.keyframe(a, q=True, tc=True, vc=True), 2))) for a in curves)
+#     check = Overshoot_Check()
+#     start = time.time()
+#     print "hello"
+#     filtered = check.filter(data)
+#     took = time.time() - start
+#     import pprint
+#     cmds.scriptJob(ie=lambda: pprint.pprint("Took: %sms" % (took * 1000)), ro=True)
+#
+#     # check.fix(filtered)

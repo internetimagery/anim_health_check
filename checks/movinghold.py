@@ -12,18 +12,17 @@
 # GNU General Public License for more details.
 
 import itertools
-import collections
 import maya.cmds as cmds
 
 def shift(iterable, size):
     """ iterate in groups ie [1,2,3] [2,3,4] """
     i = itertools.tee(iterable, size)
     for a, b in enumerate(i):
-        for c in range(a):
-            try:
+        try:
+            for c in range(a):
                 b.next()
-            except StopIteration:
-                pass
+        except StopIteration:
+            pass
     return itertools.izip(*i)
 
 class Movinghold_Check(object):
@@ -36,9 +35,8 @@ Checks for plateaus in the animation curve.
 The fix deletes any redundant keys along the hold, and slopes the curve slightly.
 """
 
-    def filter(s, sel):
+    def filter(s, sel, found):
         """ Pull out relevant keys """
-        found = collections.defaultdict(collections.OrderedDict)
         for curve, keys in sel.iteritems():
             if 2 < len(keys): # Need more than three keys to make a moving hold
                 for k1, k2, k3 in shift(keys.iteritems(), 3):

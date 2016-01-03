@@ -12,7 +12,6 @@
 # GNU General Public License for more details.
 
 import functools
-import collections
 import maya.cmds as cmds
 
 class Partial_Key_Check(object):
@@ -25,9 +24,8 @@ Checks for keys that fall between frames. ie: frame 4.32 instead of frame 4.
 The fix will put keys on whole frames.
 """
 
-    def filter(s, sel):
+    def filter(s, sel, found):
         """ Pull out relevant keys """
-        found = collections.defaultdict(collections.OrderedDict)
         for curve, keys in sel.iteritems():
             for time, value in keys.iteritems():
                 if time % 1:
