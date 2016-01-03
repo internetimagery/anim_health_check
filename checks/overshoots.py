@@ -22,11 +22,11 @@ def shift(iterable, size):
     """ iterate in groups ie [1,2,3] [2,3,4] """
     i = itertools.tee(iterable, size)
     for a, b in enumerate(i):
-        for c in range(a):
-            try:
+        try:
+            for c in range(a):
                 b.next()
-            except StopIteration:
-                pass
+        except StopIteration:
+            pass
     return itertools.izip(*i)
 
 def chunk(iterable, size, default=None):
@@ -47,16 +47,14 @@ The fix places a key at the peak of the tangent or flattens the tangent.
     def filter(s, sel):
         """ Pull out relevant keys """
         found = collections.defaultdict(collections.OrderedDict)
-        for curve, keys in sel.iteritems():
-            if 1 < len(keys): # Can't overshoot without two or more keys
-                for k1, k2 in shift((a for a in s.get_keys(curve) if a[1][0] in keys), 2): # Use different key capturing mechanism
-                    test_time = k2[1][0]
-                    prev = cmds.findKeyframe(curve, t=(test_time, test_time), which="previous")
-                    if prev == k1[1][0] and k1[2]: # Do we have an out tangent?
-                        overshoots = s.get_overshoots(k1[1], k1[2], k2[0], k2[1])
+        for curve, points in s.get_points(sel.keys()).iteritems():
+            if 1 < len(points): # No overshoots if only one keyframe
+                for (_, p1, p2), (p3, p4, _) in shift(points, 2):
+                    if p4[0] in sel[curve] and p2: # Only check sections we're interested in
+                        overshoots = s.get_overshoots(p1, p2, p3, p4)
                         if overshoots:
-                            found[curve][k1[1][0]] = k1[1][1]
-                            found[curve][k2[1][0]] = k2[1][1]
+                            found[curve][p1[0]] = p1[1]
+                            found[curve][p4[0]] = p4[1]
         return found
 
     def fix(s, sel):
@@ -71,41 +69,40 @@ The fix places a key at the peak of the tangent or flattens the tangent.
                     cmds.keyTangent(curve, t=(time,time), itt="flat", ott="flat")
             print "Flattened overshoots"
         else:
-            for curve, keys in sel.iteritems():
-                key_cache = dict((a[1][0], a) for a in s.get_keys(curve))
-                for k1, k2 in shift(keys.iteritems(), 2):
-                    k1 = key_cache[k1[0]]
-                    k2 = key_cache[k2[0]]
-                    for overshoot in s.get_overshoots(k1[1], k1[2], k2[0], k2[1]):
-                        cmds.setKeyframe(curve, t=overshoot[0], itt="flat", ott="flat")
+            for curve, points in s.get_points(sel.keys()).iteritems():
+                if 1 < len(points): # No overshoots if only one keyframe
+                    for (_, p1, p2), (p3, p4, _) in shift(points, 2):
+                        if p4[0] in sel[curve] and p2: # Only check sections we're interested in
+                            for overshoot in s.get_overshoots(p1, p2, p3, p4):
+                                cmds.setKeyframe(curve, t=overshoot[0], itt="flat", ott="flat")
             print "Keyed overshoots"
 
-    def get_keys(s, curve):
-        """ Given a curve snag all relevant keyframe information """
-        temp_curve = cmds.duplicate(curve)[0] # Create a temporary curve to not destroy animation
+    def get_points(s, curves):
+        """ Given Curves, get corresponding points """
+        result = collections.defaultdict(list)
+        tmp_curves = cmds.duplicate(curves) or [] # Make dupe
         try:
-            cmds.keyTangent(temp_curve, e=True, wt=True) # Turn on weighted tangents
-            keys = chunk(cmds.keyframe(temp_curve, q=True, tc=True, vc=True) or [], 2)
-            tangents = chunk(cmds.keyTangent(temp_curve, q=True, ia=True, oa=True, iw=True, ow=True, ott=True) or [], 5)
-            for key, tangent in itertools.izip(keys, tangents):
-                p1, p2, p3 = s.get_points(*key + tangent[:-1])
-                tangent_type = tangent[-1]
-                if tangent_type == "step":
+            cmds.keyTangent(tmp_curves, e=True, wt=True) # Ensure weighted tangents
+            keys = chunk(cmds.keyframe(tmp_curves, q=True, iv=True, tc=True, vc=True) or [], 3)
+            tangents = chunk(cmds.keyTangent(tmp_curves, q=True, ott=True, ia=True, oa=True, iw=True, ow=True) or [], 5)
+            curve_iter = iter(curves)
+            for (i, t, v), (ia, oa, iw, ow, ott) in itertools.izip(keys, tangents):
+                if not i:
+                    curve = next(curve_iter)
+                iw = -iw # Reverse in weight
+                ia, oa = math.radians(ia), math.radians(oa)
+                p2 = t, v # Central point x, y
+                p1 = math.cos(ia) * iw + t, math.sin(ia) * iw + v
+                if ott == "step":
                     p3 = None
-                yield p1, p2, p3
+                else:
+                    p3 = math.cos(oa) * ow + t, math.sin(oa) * ow + v
+                result[curve].append((p1, p2, p3))
         finally:
-            cmds.delete(temp_curve)
+            cmds.delete(tmp_curves)
+        return result
 
-    def get_points(s, time, value, in_angle, out_angle, in_weight, out_weight):
-         """ Given details about a keyframe, pull out points. """
-         in_weight = -in_weight # Reverse weight
-         in_angle, out_angle = math.radians(in_angle), math.radians(out_angle)
-         p2 = (time, value) # The point itself
-         p1 = (math.cos(in_angle) * in_weight + time, math.sin(in_angle) * in_weight + value)
-         p3 = (math.cos(out_angle) * out_weight + time, math.sin(out_angle) * out_weight + value)
-         return p1, p2, p3
-
-    # Credit : http://stackoverflow.com/questions/2587751/an-algorithm-to-find-bounding-box-of-closed-bezier-curves
+    # Reference : http://stackoverflow.com/questions/2587751/an-algorithm-to-find-bounding-box-of-closed-bezier-curves
     def get_overshoots(s, p1, p2, p3, p4):
         """ Get keyframe overshoots """
         t_values = [] # Time values on curve
@@ -157,9 +154,8 @@ The fix places a key at the peak of the tangent or flattens the tangent.
         return points
 
 if __name__ == '__main__':
-    curves = cmds.keyframe("pCube1", q=True, n=True)
-    keys = chunk(cmds.keyframe(curve, q=True, tc=True, vc=True), 2)
-    data = dict((a, tuple(chunk(cmds.keyframe(a, q=True, tc=True, vc=True), 2))) for a in curves)
+    curves = cmds.keyframe(cmds.ls(sl=True, type="transform"), q=True, n=True)
+    data = dict((a, dict(chunk(cmds.keyframe(a, q=True, tc=True, vc=True), 2))) for a in curves)
     check = Overshoot_Check()
     filtered = check.filter(data)
     check.fix(filtered)
