@@ -24,6 +24,16 @@ import collections
 import maya.cmds as cmds
 import maya.utils as utils
 
+def open_window():
+    """ Bring forward window """
+    for panel in cmds.getPanel(sty="graphEditor") or []: # Get graph editor
+        control = cmds.scriptedPanel(panel, q=True, ctl=True)
+        layout = window = cmds.control(control, q=True, p=True)
+        while cmds.layout(window, q=True, ex=True): # Get outermost window
+            window = cmds.layout(window, q=True, p=True)
+        if cmds.window(window, q=True, ex=True):
+            cmds.showWindow(window)
+
 class EKG(object):
     """ EKG machine """
     def __init__(s):
@@ -179,6 +189,7 @@ class Main(object):
         finally:
             cmds.undoInfo(closeChunk=True)
             if err: cmds.undo()
+        open_window() # Bring graph editor forward
 
     @report.Report()
     def fix_issues(s, mod):
